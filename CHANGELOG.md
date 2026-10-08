@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.2 — 2026-10-08
+
+- Accept HTTPS pairing addresses with a gateway path, including `https://edspiral.duckdns.org:8443/spiraldex`, and normalize an optional trailing slash.
+- Preserve the prefix for health, scan, and scan-status requests; direct Mac addresses continue to work.
+- Show separate validation errors for address, token, and certificate fingerprint. Distinguish a non-JSON missing gateway route from an unreachable Mac.
+- Retain certificate pinning, encrypted token storage, disabled redirects, and the fixed API allowlist.
+- Add Java URL regression checks and an Android emulator test using a temporary HTTPS endpoint. Shared-port gateway configuration is separate from this client update.
+
 ## 0.3.1 — 2026-10-08
 
 - Scale each complete card face from a fixed print layout so Android's minimum font size cannot distort archive thumbnails; contain long text and reset inherited image/layout rules.

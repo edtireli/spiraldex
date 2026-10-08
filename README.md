@@ -1,7 +1,7 @@
 <p align="center"><img src="docs/media/mark.svg" width="68" alt="SpiralDex field unit"></p>
 <h1 align="center">SpiralDex</h1>
 <p align="center"><b>Your world, in Japanese.</b><br>A pocket field guide that turns everyday objects into words you remember.</p>
-<p align="center"><a href="https://edtireli.github.io/spiraldex/">Explore the demo</a> · <a href="https://github.com/edtireli/spiraldex/releases/tag/v0.3.1">Download v0.3.1</a> · <a href="#quick-start">Get started</a></p>
+<p align="center"><a href="https://edtireli.github.io/spiraldex/">Explore the demo</a> · <a href="https://github.com/edtireli/spiraldex/releases/tag/v0.3.2">Download v0.3.2</a> · <a href="#quick-start">Get started</a></p>
 
 ![SpiralDex’s camera-first Classic Dex field unit](docs/media/social.png)
 
@@ -40,7 +40,7 @@ SpiralDex brings the tactile red shell and discovery ritual of a classic handhel
 
 ### 1. Install the Android app
 
-Download **`SpiralDex-0.3.1.apk`** from [Releases](https://github.com/edtireli/spiraldex/releases/tag/v0.3.1), open it on your Android device, and allow installation from that source when Android asks. The APK is signed with the project's release key. It is a direct installation preview, not a Play Store release.
+Download **`SpiralDex-0.3.2.apk`** from [Releases](https://github.com/edtireli/spiraldex/releases/tag/v0.3.2), open it on your Android device, and allow installation from that source when Android asks. The APK is signed with the project's release key. It is a direct installation preview, not a Play Store release.
 
 ### 2. Prepare your Mac
 
@@ -52,7 +52,7 @@ ollama pull gemma3:12b
 
 Keep Ollama running. Gemma 3 12B is a substantial model; a Mac with 24 GB or more memory is recommended for this configuration. A different installed **vision-capable** model can be selected with `DEX_VISION_MODEL`; smaller alternatives have not been validated for this release.
 
-Download **`SpiralDex-Mac-Host-0.3.1.zip`**, extract it, and open **`Start SpiralDex.command`**. If macOS blocks an unsigned downloaded launcher, use its Open / Privacy & Security approval flow. The launcher:
+Download **`SpiralDex-Mac-Host-0.3.2.zip`**, extract it, and open **`Start SpiralDex.command`**. If macOS blocks an unsigned downloaded launcher, use its Open / Privacy & Security approval flow. The launcher:
 
 1. Creates a local Python environment and installs Pillow on first use.
 2. Uses the included universal Apple Silicon / Intel subject-extraction helper.
@@ -68,6 +68,8 @@ Keep the phone and Mac on the same trusted network. In SpiralDex, tap the blue l
 Activate the camera or choose a photograph. The unit traces the subject, consults the Dex, then reveals a complete, automatically saved card. If several subjects are found, tap one in the retained photograph and retry. Inspect any unfamiliar reading or label; corrections live inside **Inspect entry**. The first scan can take longer while the model loads.
 
 Already use Spiral Chat? Set `SPIRALCHAT_GATEWAY_DIR` to its existing identity directory before starting the host. SpiralDex can reuse `config.json`, `cert.pem`, and `key.pem`; its service uses port `8445` independently of Spiral Chat. Existing files are never silently replaced.
+
+**DuckDNS and a shared port:** v0.3.2 accepts an HTTPS hostname with an optional gateway prefix, such as `https://edspiral.duckdns.org:8443/spiraldex`. A trailing slash is optional. The app preserves `/spiraldex` for health, scan, and progress requests. This address works only after your gateway has a matching authenticated route to the SpiralDex host; the APK does not install that route in Spiral Chat. DuckDNS alone does not forward ports or route requests. A direct host address, such as `https://edspiral.duckdns.org:8445`, still requires that port to be reachable. Use the token and certificate fingerprint for the endpoint you connect to.
 
 ## How it works
 

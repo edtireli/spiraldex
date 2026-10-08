@@ -4,7 +4,7 @@
 set -euo pipefail
 cd "${0:A:h:h}"
 repo='edtireli/spiraldex'
-version='0.3.1'
+version='0.3.2'
 tag="v$version"
 release_dir="dist/$version"
 
@@ -20,7 +20,7 @@ gh auth status
 [[ -f "$release_dir/SHA256SUMS" ]] || { print 'The prebuilt release files are missing. Run the documented local build first.'; exit 1; }
 ( cd "$release_dir"; shasum -a 256 -c SHA256SUMS )
 
-print '\nPublishing SpiralDex source and the prebuilt v0.3.1 Card Scaling update…'
+print '\nPublishing SpiralDex source and the prebuilt v0.3.2 Gateway Pairing update…'
 if ! gh repo view "$repo" --json name >/dev/null 2>&1; then
   gh repo create "$repo" --public \
     --description 'Your world, in Japanese. A classic pocket field guide powered by models on your own Mac.' \
@@ -31,7 +31,7 @@ git -c 'credential.helper=!gh auth git-credential' push origin "$tag"
 
 if ! gh release view "$tag" --repo "$repo" >/dev/null 2>&1; then
   gh release create "$tag" --repo "$repo" --verify-tag --prerelease \
-    --title "SpiralDex v$version — Card Scaling" \
+    --title "SpiralDex v$version — Gateway Pairing" \
     --notes-file "release-notes/$tag.md"
 fi
 

@@ -97,7 +97,7 @@ public class MainActivity extends Activity {
   @JavascriptInterface public void settings(){runOnUiThread(()->pairing());}
   @JavascriptInterface public void speak(String text,boolean slow){if(text==null||text.length()>150||!text.matches("[ぁ-ゖァ-ヶ一-龯ー\\s、。！？・]+"))return;runOnUiThread(()->{if(!voiceReady){new AlertDialog.Builder(MainActivity.this).setTitle("Japanese voice needed").setMessage("Install a Japanese device voice to hear words and kana offline.").setPositiveButton("Voice settings",(d,w)->{try{startActivity(new Intent("com.android.settings.TTS_SETTINGS"));}catch(Exception e){notice("Open Android settings → Text-to-speech.");}}).setNegativeButton("Later",null).show();return;}tts.setSpeechRate(slow?.65f:.85f);tts.speak(text,TextToSpeech.QUEUE_FLUSH,null,"dex-word");});}
   @JavascriptInterface public void cancel(String id){if(id==null||id.length()>24)return;cancelled.add(id);HttpsURLConnection c=active.remove(id);if(c!=null)c.disconnect();}
-  @JavascriptInterface public void request(String id,String path,String body){if(id==null||!id.matches("[0-9]{1,16}")||path==null||!("/api/health".equals(path)||"/api/scan".equals(path)||path.matches("/api/scan/status\\?id=[a-f0-9]{32}"))||body==null||body.length()>9*1024*1024)return;io.submit(()->requestRemote(id,path,body));}
+  @JavascriptInterface public void request(String id,String path,String body){if(id==null||!id.matches("[0-9]{1,16}")||!PairingAddress.allowsPath(path)||body==null||body.length()>9*1024*1024)return;io.submit(()->requestRemote(id,path,body));}
  }
  private void takePhoto(){
   try{File dir=new File(getCacheDir(),"camera");dir.mkdirs();cameraFile=new File(dir,"capture.jpg");cameraUri=FileProvider.getUriForFile(this,getPackageName()+".files",cameraFile);
@@ -110,15 +110,18 @@ public class MainActivity extends Activity {
  }
  private void pairing(){
   LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);int pad=(int)(22*getResources().getDisplayMetrics().density);box.setPadding(pad,10,pad,10);
-  TextView help=new TextView(this);help.setText("Run Start SpiralDex.command on your Mac. Use the displayed host address and the SpiralDex pairing token and SHA-256 certificate fingerprint.");box.addView(help);
-  EditText address=field(box,"Mac address, e.g. https://192.168.1.20:8445",prefs.getString("address",""),false);
+  TextView help=new TextView(this);help.setText("Use the HTTPS address, pairing token, and SHA-256 fingerprint shown by your Mac host. A configured gateway address may include a path, such as https://edspiral.duckdns.org:8443/spiraldex.");box.addView(help);
+  EditText address=field(box,"HTTPS address, with optional gateway path",prefs.getString("address",""),false);
   EditText token=field(box,"Pairing token",secret("token"),true);
   EditText fingerprint=field(box,"Certificate SHA-256 fingerprint",prefs.getString("fingerprint",""),false);
   AlertDialog dialog=new AlertDialog.Builder(this).setTitle("Pair your Mac").setView(box).setPositiveButton("Save",null).setNegativeButton("Cancel",null).create();dialog.setOnShowListener(d->dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v->{
-   try{URI uri=new URI(address.getText().toString().trim());String host=uri.getHost();if(!"https".equals(uri.getScheme())||host==null||uri.getUserInfo()!=null||uri.getQuery()!=null||uri.getFragment()!=null||!(uri.getPath().isEmpty()||uri.getPath().equals("/")))throw new Exception();
-    String pin=fingerprint.getText().toString().replace(":","").replace(" ","").trim().toLowerCase(Locale.ROOT);String t=token.getText().toString().trim();if(!pin.matches("[0-9a-f]{64}")||t.length()<16)throw new Exception();
-    prefs.edit().putString("address","https://"+uri.getRawAuthority()).putString("fingerprint",pin).putString("token",encrypt(t)).apply();dialog.dismiss();js("window.dexPairingChanged()");
-   }catch(Exception e){address.setError("Use an HTTPS host address, pairing token, and 64-digit SHA-256 fingerprint.");}
+   address.setError(null);token.setError(null);fingerprint.setError(null);
+   final String base;try{base=PairingAddress.normalize(address.getText().toString());}catch(IllegalArgumentException e){address.setError(e.getMessage());return;}
+   String pin=fingerprint.getText().toString().replace(":","").replace(" ","").trim().toLowerCase(Locale.ROOT);String t=token.getText().toString().trim();
+   if(t.length()<16){token.setError("Copy the full pairing token from your Mac (at least 16 characters).");return;}
+   if(!pin.matches("[0-9a-f]{64}")){fingerprint.setError("Copy the 64-digit SHA-256 fingerprint from your Mac. Colons and spaces are allowed.");return;}
+   try{prefs.edit().putString("address",base).putString("fingerprint",pin).putString("token",encrypt(t)).apply();dialog.dismiss();js("window.dexPairingChanged()");
+   }catch(Exception e){token.setError("Pairing could not be saved securely. Please try again.");}
   }));dialog.show();
  }
  private EditText field(LinearLayout box,String hint,String value,boolean password){EditText e=new EditText(this);e.setHint(hint);e.setText(value);e.setSingleLine(true);e.setInputType(InputType.TYPE_CLASS_TEXT|(password?InputType.TYPE_TEXT_VARIATION_PASSWORD:InputType.TYPE_TEXT_VARIATION_URI));e.setTextSize(14);box.addView(e,new LinearLayout.LayoutParams(-1,-2));return e;}
@@ -129,9 +132,11 @@ public class MainActivity extends Activity {
   try{String address=prefs.getString("address",""),token=secret("token"),pin=prefs.getString("fingerprint","");if(address.isEmpty()||token.isEmpty()||pin.isEmpty()){reply(id,428,"{\"error\":\"Pairing needed. Open Field station settings to link your Mac.\"}");return;}
    final String expected=pin;
    X509TrustManager trust=new X509TrustManager(){public X509Certificate[] getAcceptedIssuers(){return new X509Certificate[0];}public void checkClientTrusted(X509Certificate[] chain,String auth)throws java.security.cert.CertificateException{throw new java.security.cert.CertificateException();}public void checkServerTrusted(X509Certificate[] chain,String auth)throws java.security.cert.CertificateException{try{if(chain.length==0)throw new Exception();chain[0].checkValidity();byte[] hash=MessageDigest.getInstance("SHA-256").digest(chain[0].getEncoded());StringBuilder hex=new StringBuilder();for(byte b:hash)hex.append(String.format("%02x",b));if(!MessageDigest.isEqual(hex.toString().getBytes(StandardCharsets.US_ASCII),expected.getBytes(StandardCharsets.US_ASCII)))throw new Exception();}catch(Exception e){throw new java.security.cert.CertificateException("Pinned certificate does not match",e);}}};
-   SSLContext tls=SSLContext.getInstance("TLS");tls.init(null,new TrustManager[]{trust},new SecureRandom());c=(HttpsURLConnection)new URL(address+path).openConnection();c.setSSLSocketFactory(tls.getSocketFactory());c.setHostnameVerifier((hostname,session)->hostname.equals(URI.create(address).getHost()));c.setInstanceFollowRedirects(false);c.setConnectTimeout(10000);c.setReadTimeout(240000);c.setRequestProperty("Authorization","Bearer "+token);active.put(id,c);if(cancelled.remove(id))return;
+   SSLContext tls=SSLContext.getInstance("TLS");tls.init(null,new TrustManager[]{trust},new SecureRandom());c=(HttpsURLConnection)new URL(PairingAddress.endpoint(address,path)).openConnection();c.setSSLSocketFactory(tls.getSocketFactory());c.setHostnameVerifier((hostname,session)->hostname.equalsIgnoreCase(URI.create(address).getHost()));c.setInstanceFollowRedirects(false);c.setConnectTimeout(10000);c.setReadTimeout(240000);c.setRequestProperty("Authorization","Bearer "+token);active.put(id,c);if(cancelled.remove(id))return;
    if(!body.isEmpty()){c.setRequestMethod("POST");c.setDoOutput(true);c.setRequestProperty("Content-Type","application/json");byte[] bytes=body.getBytes(StandardCharsets.UTF_8);c.setFixedLengthStreamingMode(bytes.length);try(OutputStream out=c.getOutputStream()){out.write(bytes);}}
-   status=c.getResponseCode();try(InputStream in=status>=200&&status<300?c.getInputStream():c.getErrorStream()){if(in==null)throw new IOException();ByteArrayOutputStream out=new ByteArrayOutputStream();byte[] buffer=new byte[8192];int n;while((n=in.read(buffer))!=-1){if(out.size()+n>10*1024*1024)throw new IOException("Response too large");out.write(buffer,0,n);}result=out.toString(StandardCharsets.UTF_8.name());new JSONObject(result);}
+   status=c.getResponseCode();
+   result=new JSONObject().put("error",status==404?"The address was reached, but the SpiralDex route was not found. Check the gateway path and its routing setup.":status==401||status==403?"The address was reached, but pairing was rejected. Check the pairing token.":"The address was reached, but did not return SpiralDex data. Check the gateway route and Mac host.").toString();
+   try(InputStream in=status>=200&&status<300?c.getInputStream():c.getErrorStream()){if(in==null)throw new IOException();ByteArrayOutputStream out=new ByteArrayOutputStream();byte[] buffer=new byte[8192];int n;while((n=in.read(buffer))!=-1){if(out.size()+n>10*1024*1024)throw new IOException("Response too large");out.write(buffer,0,n);}String response=out.toString(StandardCharsets.UTF_8.name());new JSONObject(response);result=response;}catch(Exception e){if(status>=200&&status<300)status=502;}
   }catch(SSLException e){result="{\"error\":\"Certificate check failed. Verify the Mac fingerprint in pairing settings.\"}";}catch(Exception e){}finally{active.remove(id);if(c!=null)c.disconnect();}
   if(cancelled.remove(id))return;reply(id,status,result);
  }

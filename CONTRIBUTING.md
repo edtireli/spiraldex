@@ -40,6 +40,8 @@ The release application ID is `app.spiraldex`; debug builds use `app.spiraldex.d
 
 For the native sensor check, install and open the debug APK on a disposable Android emulator. Forward its `webview_devtools_remote_<pid>` socket to localhost port 9224 with `adb forward`. Run `ANDROID_SERIAL=emulator-5554 node tests/android-motion.cjs` (`ADB_PATH` and `ANDROID_CDP_URL` can override the defaults). It injects emulator sensor values, checks the real bridge and lifecycle, then restores the original sensor values. It refuses physical-device serials.
 
+Pairing URL regression checks run with `JAVA_HOME=/path/to/jdk python3 -m unittest discover -s tests -p test_pairing_address.py`. They compile the same Java URL policy as the app and cover direct hosts, gateway prefixes, trailing slashes, the three API routes, and invalid addresses. With the debug emulator and WebView forwarding above, run `ANDROID_SERIAL=emulator-5554 node tests/android-pairing.cjs`. It drives the native Save dialog, exercises HTTPS health/scan/status against a temporary local test server, and checks certificate pinning, blocked redirects, and missing-route errors. It uses disposable credentials and restores the debug app's pairing preferences; it never targets a physical phone or production service.
+
 ## Signed local releases
 
 Keep a dedicated keystore outside the repository, back it up privately, and never commit its password. Create ignored `android/signing.properties`:
@@ -51,7 +53,7 @@ keyAlias=spiraldex
 keyPassword=YOUR_PRIVATE_PASSWORD
 ```
 
-Run `python3 scripts/build-release.py` on macOS with JDK and Android SDK configured. It compiles the signed APK and universal Mac helper, then packages the Mac host and static demo with SHA-256 checksums in ignored `dist/0.3.1/`. The version is declared in `package.json`, `android/app/build.gradle`, and the publish script; the build script reads `package.json`. Update version declarations together for a new release.
+Run `python3 scripts/build-release.py` on macOS with JDK and Android SDK configured. It compiles the signed APK and universal Mac helper, then packages the Mac host and static demo with SHA-256 checksums in ignored `dist/0.3.2/`. The version is declared in `package.json`, `android/app/build.gradle`, and the publish script; the build script reads `package.json`. Update version declarations together for a new release.
 
 `scripts/publish.command` is an explicit maintainer action run in Terminal. It creates `edtireli/spiraldex` only if absent, pushes the prepared commit/tag, uploads the existing release files, and enables Pages from `main:/docs`. It does **not** compile code, download models, or consume a CI build runner. It refuses to overwrite existing release assets with different content. GitHub's own Pages deployment still runs to serve the static files.
 
