@@ -51,7 +51,7 @@ keyAlias=spiraldex
 keyPassword=YOUR_PRIVATE_PASSWORD
 ```
 
-Run `python3 scripts/build-release.py` on macOS with JDK and Android SDK configured. It compiles the signed APK and universal Mac helper, then packages the Mac host and static demo with SHA-256 checksums in ignored `dist/0.3.0/`. The version is declared in `package.json`, `android/app/build.gradle`, and the publish script; the build script reads `package.json`. Update version declarations together for a new release.
+Run `python3 scripts/build-release.py` on macOS with JDK and Android SDK configured. It compiles the signed APK and universal Mac helper, then packages the Mac host and static demo with SHA-256 checksums in ignored `dist/0.3.1/`. The version is declared in `package.json`, `android/app/build.gradle`, and the publish script; the build script reads `package.json`. Update version declarations together for a new release.
 
 `scripts/publish.command` is an explicit maintainer action run in Terminal. It creates `edtireli/spiraldex` only if absent, pushes the prepared commit/tag, uploads the existing release files, and enables Pages from `main:/docs`. It does **not** compile code, download models, or consume a CI build runner. It refuses to overwrite existing release assets with different content. GitHub's own Pages deployment still runs to serve the static files.
 
@@ -64,3 +64,5 @@ For UI changes, check 320 px and a normal phone width, keyboard focus, reduced m
 `host/card_profile.py` and `web/card-profile.js` implement the same versioned profile calculation; parity tests prevent platform drift. Rarity and finish must come from validated model fields; never roll rarity from a word hash. Keep generated text separate from the fixed renderer. The schema constrains types, hiragana scripts, rarity, and finish combinations; see [Ollama structured outputs](https://docs.ollama.com/capabilities/structured-outputs). The host emits real extraction/model stages through an authenticated status route. Use field-guide language in the scanner; keep connection details in settings.
 
 The card renderer loads verbatim upstream CSS from `web/vendor/pokemon-cards-css/`. Keep its license and hash manifest with the assets. Integration overrides belong in `web/cards.css`. The release script includes a corresponding-source ZIP from tracked files; stage new source files before packaging.
+
+The HTML print is laid out at 600 px and uniformly scaled with ResizeObserver; the upstream shine/glare layers stay at the displayed card size. Keep all print typography inside that fixed container to avoid Android's minimum-font clamping. Run `node tests/card-layout.cjs` for long-entry layout, archive pagination, and both swipe directions in Chromium/WebKit. Archive captions remain ordinary readable text outside the scaled print.

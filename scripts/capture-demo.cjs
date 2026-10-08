@@ -24,7 +24,7 @@ const base=process.env.DEMO_URL||'http://127.0.0.1:8142';
  await prints.goto(base+'/demo/card-lab.html');await prints.locator('.dex-card').first().waitFor();
  await prints.screenshot({path:path.join(media,'card-finishes.png'),fullPage:true});
  for(const id of ['chair','apple','cup']){
-  await prints.evaluate(id=>{const item=SAMPLES.find(s=>s.id===id);document.body.style.background='transparent';document.body.innerHTML='<div id="export" style="width:420px"></div>';document.getElementById('export').innerHTML=DexCards.render({...item,profile:DexProfile(item.word,item.reading,id==='apple'?'food':'household','Common','classic')});document.querySelector('.dex-card').style.width='420px';},id);
+  await prints.evaluate(id=>{const item=SAMPLES.find(s=>s.id===id);document.body.style.background='transparent';document.body.innerHTML='<div id="export" style="width:420px"></div>';document.getElementById('export').innerHTML=DexCards.render({...item,profile:DexProfile(item.word,item.reading,id==='apple'?'food':'household','Common','classic')});document.querySelector('.dex-card').style.width='420px';DexCards.mount(document.getElementById('export'));},id);
   await prints.evaluate(()=>Promise.all([...document.images].map(i=>i.decode())));
   await prints.locator('.dex-card').screenshot({path:path.join(media,`word-card-${id}.png`),omitBackground:true});
  }

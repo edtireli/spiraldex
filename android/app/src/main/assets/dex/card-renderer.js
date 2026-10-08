@@ -15,7 +15,7 @@
     const rarity=finishStyles[p.finish]||'common',star=!p.assessed?'–':p.rarity==='Common'?'●':p.rarity==='Uncommon'?'◆':p.rarity==='Rare'?'★':'★★';
     return `<article class="dex-card card interactive ${type} ${types[p.type]||'colorless'} ${full?'full-art':''} ${p.finish!=='classic'?'foil':''}" data-rarity="${rarity}" data-supertype="field entry" data-subtypes="basic" data-card-effects="pokemon-cards-css" aria-label="${esc(record.english)} discovery card, ${esc(p.rarity)}">
       <div class="card__translater"><div class="card__rotator"><div class="card__front">
-        <div class="card-print"><div class="card-paper">
+        <div class="card-face"><div class="card-print"><div class="card-paper">
           <header class="card-heading"><div class="card-name-line"><span class="stage-badge">${full?'FULL ART':'BASIC'}</span><button class="word" data-speak="${esc(record.reading)}" aria-label="Hear ${esc(record.word)}"><span lang="ja">${esc(record.word)}</span>${sound}</button><span class="hp"><small>HP</small><strong>${p.hp}</strong>${energy(p.type)}</span></div><p class="reading"><span lang="ja">${esc(record.reading)}</span>${record.romaji?' · '+esc(record.romaji):''}</p></header>
           <div class="card-art"><div class="art-scene" aria-hidden="true"></div><img src="${safeAsset(record.asset)}" alt="${esc(record.english)} with its background removed"></div>
           <div class="specimen-line">NO. ${esc(record.number)} &nbsp; ${esc(p.label)} discovery &nbsp; · &nbsp; ${esc(record.english)}</div>
@@ -23,7 +23,7 @@
           <div class="card-stats">${Object.entries(p.stats).map(([name,value])=>`<span><small>${name}</small>${energy(name==='power'?p.type:'household')}<b>${value}</b></span>`).join('')}</div>
           <p class="card-flavor">${esc(record.fact||record.description)}</p>
           <footer class="card-footer"><span><b>SDX</b> ${esc(record.number)} &nbsp; FIELD SET</span><span>${esc(p.rarity)} ${star}</span></footer>
-        </div></div>
+        </div></div></div>
         <div class="card__shine" aria-hidden="true"></div><div class="card__glare" aria-hidden="true"></div>
       </div></div></div>
     </article>`;
@@ -38,7 +38,18 @@
     const values={'pointer-x':`${x*100}%`,'pointer-y':`${y*100}%`,'background-x':`${37+x*26}%`,'background-y':`${33+y*34}%`,'rotate-x':`${(x-.5)*-15}deg`,'rotate-y':`${(y-.5)*15}deg`,'translate-x':`${(x-.5)*travel}px`,'translate-y':`${(y-.5)*travel}px`,'pointer-from-center':Math.min(1,Math.hypot(x-.5,y-.5)*2),'pointer-from-top':y,'pointer-from-left':x,'card-opacity':1};
     for(const [name,value] of Object.entries(values))card.style.setProperty('--'+name,value);
   }
+  // Layout the complete print at 600 px, then shrink it as one piece. WebView's
+  // minimum font size must not enlarge individual lines inside small thumbnails.
+  const faceWidth=600,observed=new Set();
+  const sizeObserver=new ResizeObserver(entries=>{
+    for(const {target,contentRect} of entries)target.style.setProperty('--face-scale',contentRect.width/faceWidth);
+  });
   function mount(container) {
+    for(const card of observed)if(!card.isConnected){sizeObserver.unobserve(card);observed.delete(card);}
+    container.querySelectorAll('.dex-card.card').forEach(card=>{
+      if(observed.has(card))return;
+      card.style.setProperty('--face-scale',card.clientWidth/faceWidth);sizeObserver.observe(card);observed.add(card);
+    });
     const reduced=matchMedia('(prefers-reduced-motion: reduce)');
     container.querySelectorAll('.dex-card.card:not([data-effects-bound])').forEach(card=>{
       card.dataset.effectsBound='true';let frame=0,timer;

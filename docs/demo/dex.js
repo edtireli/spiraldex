@@ -21,7 +21,7 @@
   const icon = name => `<svg viewBox="0 0 24 24" aria-hidden="true">${paths[name] || paths.card}</svg>`;
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const asset = record => /^(assets\/[a-z-]+\.(?:png|webp|svg)|data:image\/(?:png|jpeg);base64,[A-Za-z0-9+/=]+)$/.test(record?.asset || '') ? record.asset : '';
-  let section = 0, view = 'scanner', cards = [], entry = null, database = null;
+  let section = 0, view = 'scanner', cards = [], entry = null, database = null, swipeForward = 0;
   let photo = null, target = null, stream = null, busy = false, scanController = null, pollTimer = null, epoch = 0;
   let stage = 'scanning', error = '', fresh = false, stored = true, storageProblem = false;
   let health = null, checking = false, connectionError = '', collectionPage = 0, kanaPage = 0, script = 'hiragana', kanaData = null, selectedKana = null;
@@ -77,12 +77,21 @@
     if (busy) return;
     stopCamera(); stopAudio(); fresh = false; view = next;
     if (sections.includes(next)) section = sections.indexOf(next);
+    if (next === 'scanner') swipeForward = 0;
     render();
   }
   function turn(direction) {
     if (busy || document.querySelector('dialog[open]')) return;
     section = (section + direction + sections.length) % sections.length;
     navigate(sections[section]);
+  }
+  function swipe(direction) {
+    if (busy || document.querySelector('dialog[open]')) return;
+    // Either first gesture advances from the left dot. Keep that direction for
+    // the next page; reversing the gesture goes back, without wrapping the dots.
+    if (section === 0 || !swipeForward) swipeForward = section === 2 ? -direction : direction;
+    const next = Math.max(0,Math.min(sections.length-1,section+(direction===swipeForward?1:-1)));
+    if (next !== section) navigate(sections[next]);
   }
   function lastCard() { return cards[cards.length-1]; }
   function screenHeader(label, right = '') { return `<div class="screen-label"><span>${label}</span><span>${right}</span></div>`; }
@@ -130,10 +139,10 @@
   }
   function collectionView() {
     if (!cards.length) return `<div class="empty-archive">${screenHeader('CARD ARCHIVE','000')}<div class="empty-glyph">${icon('card')}</div><h1>No entries. Yet.</h1><p>Every discovery leaves a story.<br>Find your first one.</p><button class="action" data-action="scanner">Return to scanner ${icon('arrow')}</button></div>`;
-    const count = innerHeight < 700 ? 4 : 6, total = Math.ceil(cards.length/count);
+    const count = innerHeight < 700 ? 2 : 4, total = Math.ceil(cards.length/count);
     collectionPage = Math.min(collectionPage,total-1);
     const list = [...cards].reverse().slice(collectionPage*count,(collectionPage+1)*count);
-    return `<div class="archive-screen">${screenHeader('CARD ARCHIVE', `${String(cards.length).padStart(3,'0')} REGISTERED`)}<div class="archive-grid">${list.map(record => `<div class="archive-card card-thumb"><div class="thumb-print" inert>${cardMarkup(record)}</div><button class="archive-open" data-open="${esc(record.id)}" aria-label="Inspect ${esc(record.word)}, ${esc(record.english)}, ${esc(record.profile.rarity)}"></button></div>`).join('')}</div>${pager(collectionPage,total,'cards-prev','cards-next')}<button class="text-button" data-action="review">Practice your discoveries ↻</button></div>`;
+    return `<div class="archive-screen">${screenHeader('CARD ARCHIVE', `${String(cards.length).padStart(3,'0')} REGISTERED`)}<div class="archive-grid" data-count="${list.length}">${list.map(record => `<div class="archive-card card-thumb"><div class="thumb-slot"><div class="thumb-print" inert>${cardMarkup(record)}<div class="thumb-caption" aria-hidden="true"><b lang="ja">${esc(record.word)}</b><span>${esc(record.english)}</span></div></div></div><button class="archive-open" data-open="${esc(record.id)}" aria-label="Inspect ${esc(record.word)}, ${esc(record.english)}, ${esc(record.profile.rarity)}"></button></div>`).join('')}</div>${pager(collectionPage,total,'cards-prev','cards-next')}<button class="text-button" data-action="review">Practice your discoveries ↻</button></div>`;
   }
   function kanaView() {
     const list = kanaData?.[script] || [], total = Math.max(1,Math.ceil(list.length/15));
@@ -151,7 +160,7 @@
   }
   function render() {
     const content = {scanner,card:cardView,collection:collectionView,kana:kanaView,settings:settingsView,review:reviewView}[view] || scanner;
-    root.innerHTML = `<div class="field-unit"><header class="device-head"><button class="lens" data-action="settings" aria-label="Field station settings" ${busy?'disabled':''}><span></span></button><div class="indicator-bank" aria-label="${sectionNames[section]}, section ${section+1} of 3">${sections.map((_,i)=>`<i class="indicator ${i===section?'lit':''}" aria-hidden="true"></i>`).join('')}<span class="device-name">SPIRALDEX</span></div><span class="device-model">FIELD UNIT<br>SD–01</span></header><div class="case-seam" aria-hidden="true"></div><main class="display ${view==='card'?'card-display':''}" aria-label="${esc(view==='card'?'Discovery card':sectionNames[section])}">${content()}</main><footer class="device-controls"><button class="hardware-button" data-action="${view==='card'?'hear':'scanner'}" aria-label="${view==='card'?'Hear this entry':'Return to scanner'}">${icon(view==='card'?'sound':'camera')}</button><div class="device-lcd" aria-live="polite"><b>${busy ? 'SCANNING' : view==='card' ? stored ? 'ENTRY REGISTERED' : 'MEMORY FULL' : `${String(section+1).padStart(2,'0')} / ${sectionNames[section].toUpperCase()}`}</b><span>${busy ? 'READING FIELD DATA…' : `SWIPE → ${sectionNames[(section+1)%3].toUpperCase()}`}</span></div><div class="dpad"><button class="dpad-left" data-turn="-1" aria-label="Previous section" ${busy?'disabled':''}>‹</button><span></span><button class="dpad-right" data-turn="1" aria-label="Next section" ${busy?'disabled':''}>›</button></div></footer></div><input id="photo-input" type="file" accept="image/*" hidden>`;
+    root.innerHTML = `<div class="field-unit"><header class="device-head"><button class="lens" data-action="settings" aria-label="Field station settings" ${busy?'disabled':''}><span></span></button><div class="indicator-bank" aria-label="${sectionNames[section]}, section ${section+1} of 3">${sections.map((_,i)=>`<i class="indicator ${i===section?'lit':''}" aria-hidden="true"></i>`).join('')}<span class="device-name">SPIRALDEX</span></div><span class="device-model">FIELD UNIT<br>SD–01</span></header><div class="case-seam" aria-hidden="true"></div><main class="display ${view==='card'?'card-display':''}" aria-label="${esc(view==='card'?'Discovery card':sectionNames[section])}">${content()}</main><footer class="device-controls"><button class="hardware-button" data-action="${view==='card'?'hear':'scanner'}" aria-label="${view==='card'?'Hear this entry':'Return to scanner'}">${icon(view==='card'?'sound':'camera')}</button><div class="device-lcd" aria-live="polite"><b>${busy ? 'SCANNING' : view==='card' ? stored ? 'ENTRY REGISTERED' : 'MEMORY FULL' : `${String(section+1).padStart(2,'0')} / ${sectionNames[section].toUpperCase()}`}</b><span>${busy ? 'READING FIELD DATA…' : section===0?'SWIPE EITHER WAY':section===2?'SWIPE BACK':'KEEP SWIPING'}</span></div><div class="dpad"><button class="dpad-left" data-turn="-1" aria-label="Previous section" ${busy?'disabled':''}>‹</button><span></span><button class="dpad-right" data-turn="1" aria-label="Next section" ${busy?'disabled':''}>›</button></div></footer></div><input id="photo-input" type="file" accept="image/*" hidden>`;
     bind();
     if (stream) {
       const video = root.querySelector('video'); if (video) { video.srcObject = stream; void video.play().catch(()=>{}); }
@@ -183,7 +192,7 @@
       case 'cards-prev': collectionPage--;return render();case 'cards-next':collectionPage++;return render();
       case 'kana-prev':kanaPage--;selectedKana=null;return render();case 'kana-next':kanaPage++;selectedKana=null;return render();
       case 'credits': {
-        const dialog=showDialog('About the field unit','<p>SpiralDex 0.3.0 · © 2026 SpiralDex contributors</p><p>Card effects: <b>pokemon-cards-css</b>, © 2022 Simon Goellner (@simeydotme). Free software under GPL-3.0, without warranty. You may redistribute and modify it under that license. Prior MIT notices are retained.</p><p>Corresponding source: github.com/edtireli/spiraldex/releases/tag/v0.3.0<br>Card effects: github.com/simeydotme/pokemon-cards-css</p><button class="soft-button" data-license>Read the GPL-3.0 license</button>');
+        const dialog=showDialog('About the field unit','<p>SpiralDex 0.3.1 · © 2026 SpiralDex contributors</p><p>Card effects: <b>pokemon-cards-css</b>, © 2022 Simon Goellner (@simeydotme). Free software under GPL-3.0, without warranty. You may redistribute and modify it under that license. Prior MIT notices are retained.</p><p>Corresponding source: github.com/edtireli/spiraldex/releases/tag/v0.3.1<br>Card effects: github.com/simeydotme/pokemon-cards-css</p><button class="soft-button" data-license>Read the GPL-3.0 license</button>');
         dialog.querySelector('[data-license]').onclick=async()=>{try{const response=await fetch('vendor/pokemon-cards-css/LICENSE');if(!response.ok)throw Error();const text=await response.text();dialog.close();showDialog('GPL-3.0 license',`<pre style="white-space:pre-wrap;font:11px/1.6 monospace">${esc(text)}</pre>`);}catch{toast('The license could not be opened. It is also included with the release source.');}};return;
       }
       case 'kana-notes':return showDialog('Sound field notes','<p>Hiragana and katakana each have 46 basic characters. Tap a sign to hear its sound.</p><p>On their own, は and へ sound “ha” and “he”. As particles they are “wa” and “e”. を is usually “o”. Voiced and combined sounds will join the library in a future update.</p>');
@@ -329,7 +338,7 @@
   let gesture=null;
   root.addEventListener('pointerdown',event=>{if(!event.isPrimary||event.target.closest('input,textarea,select,[data-no-swipe]'))return;gesture={x:event.clientX,y:event.clientY,time:Date.now(),id:event.pointerId};});
   root.addEventListener('pointercancel',()=>gesture=null);
-  root.addEventListener('pointerup',event=>{if(!gesture||gesture.id!==event.pointerId)return;const dx=event.clientX-gesture.x,dy=event.clientY-gesture.y,elapsed=Date.now()-gesture.time;gesture=null;if(Math.abs(dx)>65&&Math.abs(dx)>Math.abs(dy)*1.6&&elapsed<1000){event.preventDefault();turn(dx>0?1:-1);}});
+  root.addEventListener('pointerup',event=>{if(!gesture||gesture.id!==event.pointerId)return;const dx=event.clientX-gesture.x,dy=event.clientY-gesture.y,elapsed=Date.now()-gesture.time;gesture=null;if(Math.abs(dx)>65&&Math.abs(dx)>Math.abs(dy)*1.6&&elapsed<1000){event.preventDefault();swipe(dx>0?1:-1);}});
   document.addEventListener('keydown',event=>{if(event.target.closest('input,textarea,select,dialog'))return;if(event.key==='ArrowRight'||event.key==='ArrowLeft'){event.preventDefault();turn(event.key==='ArrowRight'?1:-1);}});
   window.addEventListener('resize',()=>{if(!document.querySelector('dialog[open]'))render();});
   window.addEventListener('pagehide',()=>{stopCamera();stopAudio();});

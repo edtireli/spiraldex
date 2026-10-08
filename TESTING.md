@@ -1,12 +1,15 @@
-# Release verification — v0.3.0
+# Release verification — v0.3.1
 
 Verified locally on 2026-10-08. These checks describe this preview, not a general recognition-accuracy benchmark.
+
+For v0.3.1, the card-layout, navigation, existing UI, and card-effect checks were rerun. Host/model checks below are retained evidence from v0.3.0; host generation code is unchanged.
 
 | Check | Result |
 | --- | --- |
 | Host contract, rarity/finish combinations, HTTP boundary, status, and profile parity | 27 Python tests passed |
 | Actual upstream card styles | Six CSS files verified byte-for-byte against the pinned manifest and confirmed loaded in the browser; all four treatments respond to touch/pointer variables |
 | Card geometry and assets | Trading-card aspect ratio 0.718 verified, mobile studio fits 320 px, no remote image/texture requests, reduced motion disables tilt |
+| Archive scaling | Complete print scales uniformly; long entries, 1/2/7-item collections, pagination, card opening, and inspection fit 320–430 px in Chromium and WebKit; Android WebView checked with its default minimum font size |
 | Phone orientation | Browser suite passed relative calibration, upright/landscape rotation, bounded tilt/translation, touch priority, saved Off preference, permission denial/retry, reduced motion, and missing-sensor fallback |
 | Native motion integration | Android emulator sensor input drove the debug app's rotation, translation, and foil properties through the native bridge; background pause/resume, Off, and reduced motion stopped/resumed native callbacks correctly |
 | Rarity persistence | Model-selected Rare/holo survives automatic saving and reload; unassessed old entries never inherit a hash-based rarity |
@@ -15,7 +18,7 @@ Verified locally on 2026-10-08. These checks describe this preview, not a genera
 | Scan interruption | Cancellation ignores late responses; errors retain the photo; tap-to-select retry and invalid image handling passed |
 | Storage limits | Full storage is reported honestly; save retry succeeds and survives reload |
 | Existing collections | Real discoveries retained; bundled starter entries filtered out; older cards without model rarity are marked Unassessed |
-| Navigation and learning | Rightward touch gestures, D-pad, keyboard, inspection, and all 46+46 paged kana passed |
+| Navigation and learning | Either first swipe advances left dot → middle → last; reversing goes back and the last dot does not wrap. D-pad, keyboard, inspection, and all 46+46 paged kana passed |
 | Browser engines | Chromium suite and WebKit interaction/layout smoke passed; reduced motion respected |
 | Earlier design studies | All four retained concepts passed save/reload, deduplication, kana, recall, cancellation, and 320–480 px checks |
 | Public project page | 320–1440 px checks, images, design switching, and kana deep link passed |

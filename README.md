@@ -1,7 +1,7 @@
 <p align="center"><img src="docs/media/mark.svg" width="68" alt="SpiralDex field unit"></p>
 <h1 align="center">SpiralDex</h1>
 <p align="center"><b>Your world, in Japanese.</b><br>A pocket field guide that turns everyday objects into words you remember.</p>
-<p align="center"><a href="https://edtireli.github.io/spiraldex/">Explore the demo</a> · <a href="https://github.com/edtireli/spiraldex/releases/tag/v0.3.0">Download v0.3.0</a> · <a href="#quick-start">Get started</a></p>
+<p align="center"><a href="https://edtireli.github.io/spiraldex/">Explore the demo</a> · <a href="https://github.com/edtireli/spiraldex/releases/tag/v0.3.1">Download v0.3.1</a> · <a href="#quick-start">Get started</a></p>
 
 ![SpiralDex’s camera-first Classic Dex field unit](docs/media/social.png)
 
@@ -31,7 +31,7 @@ SpiralDex brings the tactile red shell and discovery ritual of a classic handhel
 - **Lift the subject out.** Apple Vision produces a transparent cutout on your Mac.
 - **Make a word card.** Japanese spelling, hiragana reading, romanization, meaning, examples, and notes arrive with an automatically selected type, rarity, finish, HP, and field ratings.
 - **Hear the language.** Tap words, examples, or kana. Android uses an installed Japanese voice, including a slower playback option.
-- **Collect and recall.** Cards register automatically. Swipe right from Scanner → Card archive → Kana library; use the physical D-pad or arrow keys too. The main device does not scroll.
+- **Collect and recall.** Cards register automatically. Your first swipe can go left or right: Scanner → Card archive → Kana library. Continue that way to advance, or reverse to go back; use the physical D-pad or arrow keys too. The main device does not scroll.
 - **Tilt to catch the light.** Cards rotate and move gently with your phone, including their foil reflections. Motion starts automatically in the Android card views. Recenter in inspection or turn it off in settings; reduced motion is respected. Sensor data stays on your phone.
 - **Explore kana.** 46 basic hiragana and 46 basic katakana, with sounds and examples.
 - **Use your own models.** HTTPS pairing, certificate pinning, and a private token connect the phone to your laptop. No cloud inference API is required.
@@ -40,7 +40,7 @@ SpiralDex brings the tactile red shell and discovery ritual of a classic handhel
 
 ### 1. Install the Android app
 
-Download **`SpiralDex-0.3.0.apk`** from [Releases](https://github.com/edtireli/spiraldex/releases/tag/v0.3.0), open it on your Android device, and allow installation from that source when Android asks. The APK is signed with the project's release key. It is a direct installation preview, not a Play Store release.
+Download **`SpiralDex-0.3.1.apk`** from [Releases](https://github.com/edtireli/spiraldex/releases/tag/v0.3.1), open it on your Android device, and allow installation from that source when Android asks. The APK is signed with the project's release key. It is a direct installation preview, not a Play Store release.
 
 ### 2. Prepare your Mac
 
@@ -52,7 +52,7 @@ ollama pull gemma3:12b
 
 Keep Ollama running. Gemma 3 12B is a substantial model; a Mac with 24 GB or more memory is recommended for this configuration. A different installed **vision-capable** model can be selected with `DEX_VISION_MODEL`; smaller alternatives have not been validated for this release.
 
-Download **`SpiralDex-Mac-Host-0.3.0.zip`**, extract it, and open **`Start SpiralDex.command`**. If macOS blocks an unsigned downloaded launcher, use its Open / Privacy & Security approval flow. The launcher:
+Download **`SpiralDex-Mac-Host-0.3.1.zip`**, extract it, and open **`Start SpiralDex.command`**. If macOS blocks an unsigned downloaded launcher, use its Open / Privacy & Security approval flow. The launcher:
 
 1. Creates a local Python environment and installs Pillow on first use.
 2. Uses the included universal Apple Silicon / Intel subject-extraction helper.

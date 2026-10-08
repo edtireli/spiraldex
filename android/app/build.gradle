@@ -5,7 +5,7 @@ if (signingFile.exists()) { signingFile.withInputStream { releaseKey.load(it) } 
 android {
  namespace 'app.spiraldex'
  compileSdk 34
- defaultConfig { applicationId 'app.spiraldex'; minSdk 28; targetSdk 34; versionCode 3; versionName '0.3.0' }
+ defaultConfig { applicationId 'app.spiraldex'; minSdk 28; targetSdk 34; versionCode 4; versionName '0.3.1' }
  compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
  signingConfigs {
   release {

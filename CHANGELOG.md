@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.1 — 2026-10-08
+
+- Scale each complete card face from a fixed print layout so Android's minimum font size cannot distort archive thumbnails; contain long text and reset inherited image/layout rules.
+- Enlarge a lone archive card, add readable Japanese/English captions, and use two/four cards per page according to available height.
+- Let either first swipe advance from the left dot to the middle dot, continue to the last dot in the same direction, and reverse to go back.
+- Retain the upstream foil layers, phone orientation, pronunciation, and model rarity; add long-entry layout and gesture regression coverage.
+
 ## 0.3.0 — 2026-10-08
 
 - Integrate verbatim, pinned pokemon-cards-css base, reverse-holo, regular-holo, and gallery-holo styles with touch and pointer lighting.
