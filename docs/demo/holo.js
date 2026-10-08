@@ -1,5 +1,5 @@
 // Original SpiralDex foil interaction, visually inspired by simeydotme/pokemon-cards-css.
-// No upstream source code or card artwork is included.
+// Legacy design study only. Classic Dex uses the actual upstream CSS via card-renderer.js.
 (() => {
 const reduce=matchMedia('(prefers-reduced-motion: reduce)');
 function attach(){document.querySelectorAll('[data-theme=holo] .cardface:not([data-foil]), .cardface.foil:not([data-foil])').forEach(card=>{

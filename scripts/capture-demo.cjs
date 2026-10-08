@@ -20,6 +20,15 @@ const base=process.env.DEMO_URL||'http://127.0.0.1:8142';
  await page.locator('[data-turn="1"]').click();await page.screenshot({path:path.join(media,'collection.png')});
  await page.locator('[data-turn="1"]').click();await page.locator('.kana-key').first().waitFor();
  await page.screenshot({path:path.join(media,'kana.png')});await context.close();
+ const prints=await browser.newPage({viewport:{width:1440,height:950},reducedMotion:'reduce'});
+ await prints.goto(base+'/demo/card-lab.html');await prints.locator('.dex-card').first().waitFor();
+ await prints.screenshot({path:path.join(media,'card-finishes.png'),fullPage:true});
+ for(const id of ['chair','apple','cup']){
+  await prints.evaluate(id=>{const item=SAMPLES.find(s=>s.id===id);document.body.style.background='transparent';document.body.innerHTML='<div id="export" style="width:420px"></div>';document.getElementById('export').innerHTML=DexCards.render({...item,profile:DexProfile(item.word,item.reading,id==='apple'?'food':'household','Common','classic')});document.querySelector('.dex-card').style.width='420px';},id);
+  await prints.evaluate(()=>Promise.all([...document.images].map(i=>i.decode())));
+  await prints.locator('.dex-card').screenshot({path:path.join(media,`word-card-${id}.png`),omitBackground:true});
+ }
+ await prints.close();
  for(const width of [1440,390]){
   const site=await browser.newPage({viewport:{width,height:1000},deviceScaleFactor:1,reducedMotion:'reduce'});
   await site.goto(base);

@@ -3,7 +3,7 @@ from pathlib import Path
 from PIL import Image
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'host'));import server
 class Contract(unittest.TestCase):
- def valid(self):return {**{k:'テスト' for k in server.FIELDS},'reading':'いす','sentence_reading':'これはいすです。','template':'everyday','card_type':'household','uncertain':False}
+ def valid(self):return {**{k:'テスト' for k in server.FIELDS},'reading':'いす','sentence_reading':'これはいすです。','template':'everyday','card_type':'household','rarity':'Common','card_finish':'classic','uncertain':False}
  def test_complete_entry(self):self.assertEqual(server.validate_entry(self.valid())['reading'],'いす')
  def test_model_cannot_choose_html_template(self):
   data=self.valid();data['template']='<script>'
@@ -42,6 +42,14 @@ class Contract(unittest.TestCase):
  def test_card_type_is_constrained(self):
   data=self.valid();data['card_type']='custom-html'
   with self.assertRaises(server.ScanError):server.validate_entry(data)
+ def test_model_rarity_controls_foil(self):
+  for rarity,finishes in server.FINISHES.items():
+   for finish in finishes:
+    data={**self.valid(),'rarity':rarity,'card_finish':finish};self.assertEqual(server.validate_entry(data)['card_finish'],finish)
+ def test_common_object_cannot_receive_holo(self):
+  for rarity,finish in [('Common','holo'),('Uncommon','full-art'),('Rare','classic'),('Ultra rare','classic'),('<script>','holo')]:
+   data={**self.valid(),'rarity':rarity,'card_finish':finish}
+   with self.assertRaises(server.ScanError):server.validate_entry(data)
 class HTTP(unittest.TestCase):
  @classmethod
  def setUpClass(cls):

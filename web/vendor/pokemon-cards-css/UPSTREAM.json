@@ -1,0 +1,13 @@
+{
+  "repository": "https://github.com/simeydotme/pokemon-cards-css",
+  "commit": "acb1197633e749a1fba4412231db2f6581586d00",
+  "license": "GPL-3.0",
+  "files": {
+    "cards.css": "ff57eaa7cfa635e2e2389eddecddeb3ccd16ffe6fd5e0e37f1d7623b24cf3d44",
+    "cards/base.css": "4c76b51851891fa6e8be6313e012e93df085ddc6be860b3181058368d9d92f77",
+    "cards/basic.css": "d06a2d6770a9ace7036744426e461564252078ce24cf7ca860651c83d4ae1a16",
+    "cards/regular-holo.css": "8ddb875af9dddacc1a01a530e7e47e3b614448133c00077cdbd4b7e57a56a970",
+    "cards/reverse-holo.css": "bf7f585f6c160050d4f2861a5e3265440826466f0e380bb5b9cb193c4f4525ea",
+    "cards/trainer-gallery-holo.css": "d61772b93c818c867d8d7ca520d6a5a2a4fdadbfe0e4d199c4bd9ca982f4ae19"
+  }
+}

@@ -1,4 +1,4 @@
-SpiralDex static demo — 0.2.0
+SpiralDex static demo — 0.3.0
 
 From the extracted SpiralDex folder, run:
 

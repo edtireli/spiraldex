@@ -1,6 +1,6 @@
 {
   "name": "spiraldex",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "description": "A pocket field guide to Japanese, powered by your own Mac",
   "scripts": {

@@ -5,7 +5,7 @@ const path=require('path');
 const root=path.resolve(__dirname,'..');
 const base=process.env.BASE_URL||'http://127.0.0.1:8139';
 const demoBase=process.env.DEMO_URL||'http://127.0.0.1:8142';
-const fixture={id:'word-test-cup',word:'カップ',reading:'かっぷ',romaji:'kappu',english:'cup',description:'A small container for drinking.',sentence:'これはカップです。',sentence_reading:'これはかっぷです。',translation:'This is a cup.',fact:'カップ is written in katakana.',card_type:'household',template:'everyday',source:'Model draft',asset:'data:image/png;base64,'+fs.readFileSync(path.join(root,'web/assets/cup.png')).toString('base64')};
+const fixture={id:'word-test-cup',word:'カップ',reading:'かっぷ',romaji:'kappu',english:'cup',description:'A small container for drinking.',sentence:'これはカップです。',sentence_reading:'これはかっぷです。',translation:'This is a cup.',fact:'カップ is written in katakana.',rarity:'Rare',card_finish:'holo',rarity_reason:'A visibly unusual test object.',card_type:'household',template:'everyday',source:'Model draft',asset:'data:image/png;base64,'+fs.readFileSync(path.join(root,'web/assets/cup.png')).toString('base64')};
 const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 
 async function swipeRight(page){
@@ -48,14 +48,14 @@ async function fit(page,name){
  await page.locator('.dex-card').waitFor();
  assert.equal(uploads,1);assert.match(bodies[0].image,/^data:image\/jpeg;base64,/);assert.match(bodies[0].request_id,/^[a-f0-9]{32}$/);
  assert.equal(await page.locator('select,[data-save]').count(),0,'Card should arrive completed without controls');
- assert.equal(await page.locator('.card-stats b').count(),3);
+ assert.equal(await page.locator('.card-stats b').count(),3);assert.equal(await page.locator('.dex-card').getAttribute('data-rarity'),'rare holo','Model-selected rarity must reach the rendered card');
  for(const size of [{width:320,height:568},{width:360,height:640},{width:390,height:844},{width:430,height:932}]){await page.setViewportSize(size);await fit(page,'card');}
  const rating=await page.locator('.card-stats').innerText();
  await page.locator('[data-action="inspect"]').click();await page.getByRole('dialog').waitFor();
  assert.ok((await page.getByRole('dialog').innerText()).includes('カップ is written in katakana.'));
  await page.keyboard.press('Escape');await page.reload();await page.locator('.last-discovery').waitFor();
  await swipeRight(page);assert.equal(await page.locator('.archive-card').count(),1,'Automatic save did not persist');
- await page.locator('[data-open]').click();assert.equal(await page.locator('.card-stats').innerText(),rating);
+ await page.locator('[data-open]').click();assert.equal(await page.locator('.card-stats').innerText(),rating);assert.equal(await page.locator('.dex-card').getAttribute('data-rarity'),'rare holo');
  await page.locator('[data-action="scanner"]').first().click();
  await page.locator('#photo-input').setInputFiles(path.join(root,'web/assets/cup.png'));await page.locator('.dex-card').waitFor();
  await swipeRight(page);assert.equal(await page.locator('.archive-card').count(),1,'Rescan created duplicate');
@@ -71,8 +71,9 @@ async function fit(page,name){
 
  // Preserve actual v0.1 cards while removing bundled starter examples.
  const migration=await browser.newContext({viewport:{width:390,height:844}});const m=await migration.newPage();
- await m.addInitScript(({real})=>{localStorage.setItem('spiraldex-v1',JSON.stringify([{id:'chair',word:'椅子',source:'Sample entry'},real,{...real,id:'word-other',word:'りんご',reading:'りんご',english:'apple'}]));},{real:fixture});
- await m.goto(base+'/01-classic.html');await m.locator('.last-discovery').waitFor();await swipeRight(m);assert.equal(await m.locator('.archive-card').count(),2);assert.ok((await m.locator('.archive-card').allInnerTexts()).join(' ').includes('カップ'));
+ const legacy={...fixture,profile:{version:1,rarity:'Ultra rare',finish:'foil'}};delete legacy.rarity;delete legacy.card_finish;delete legacy.rarity_reason;
+ await m.addInitScript(({real})=>{localStorage.setItem('spiraldex-v1',JSON.stringify([{id:'chair',word:'椅子',source:'Sample entry'},real,{...real,id:'word-other',word:'りんご',reading:'りんご',english:'apple'}]));},{real:legacy});
+ await m.goto(base+'/01-classic.html');await m.locator('.last-discovery').waitFor();await swipeRight(m);assert.equal(await m.locator('.archive-card').count(),2);assert.equal(await m.locator('.dex-card[data-rarity="common"]').count(),2,'Legacy random rarity must not survive migration');assert.ok((await m.locator('.archive-card').allInnerTexts()).join(' ').includes('Unassessed'));assert.ok((await m.locator('.archive-card').allInnerTexts()).join(' ').includes('カップ'));
  await m.route('**/api/scan',route=>route.fulfill({json:fixture}));await m.locator('[data-action="scanner"]').click();await m.locator('#photo-input').setInputFiles(path.join(root,'web/assets/cup.png'));await m.locator('.dex-card').waitFor();await m.reload();await m.locator('.last-discovery').waitFor();assert.ok((await m.locator('.last-discovery').innerText()).includes('カップ'),'Rescanning an older entry must update the last discovery');await migration.close();
 
  // A full device must never report an unsaved discovery as registered.

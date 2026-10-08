@@ -1,4 +1,4 @@
-# SpiralDex Mac companion — 0.2.0
+# SpiralDex Mac companion — 0.3.0
 
 This folder is the prebuilt local model host for the SpiralDex Android app.
 
@@ -18,7 +18,7 @@ To use the UI directly on the Mac, run `.venv/bin/python host/server.py` and ope
 Recognition is experimental. Review each generated object label and reading before learning it. Saved cards stay on the device that saved them. There is no cloud sync or durable offline scan queue.
 
 - Setup and source: https://github.com/edtireli/spiraldex
-- Releases: https://github.com/edtireli/spiraldex/releases/tag/v0.2.0
+- Releases: https://github.com/edtireli/spiraldex/releases/tag/v0.3.0
 - Sample demo: https://edtireli.github.io/spiraldex/
 
 Read PRIVACY.md for storage details and CREDITS.md for dependencies and artwork. New scans use Apple Vision and a local Ollama model; they do not call a cloud inference API.

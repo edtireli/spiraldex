@@ -7,7 +7,7 @@ from urllib.error import URLError
 from urllib.parse import urlsplit, parse_qs, unquote
 from urllib.request import Request, urlopen
 from PIL import Image, ImageOps
-from card_profile import card_profile, TYPES
+from card_profile import card_profile, TYPES, RARITIES, FINISHES
 
 ROOT=Path(__file__).resolve().parent
 WEB_ROOT=ROOT.parent/'web'
@@ -16,8 +16,8 @@ OLLAMA='http://127.0.0.1:11434'
 MAX_BODY=9*1024*1024
 Image.MAX_IMAGE_PIXELS=20_000_000
 LOCK=threading.Lock()
-FIELDS={'word':40,'reading':60,'romaji':100,'english':80,'description':180,'sentence':100,'sentence_reading':150,'translation':180,'fact':180}
-SCHEMA={'type':'object','additionalProperties':False,'properties':{**{k:{'type':'string','maxLength':n} for k,n in FIELDS.items()},'template':{'type':'string','enum':['everyday','nature']},'card_type':{'type':'string','enum':list(TYPES)},'uncertain':{'type':'boolean'}},'required':[*FIELDS,'template','card_type','uncertain']}
+FIELDS={'word':40,'reading':60,'romaji':100,'english':80,'description':180,'sentence':100,'sentence_reading':150,'translation':180,'fact':180,'rarity_reason':180}
+SCHEMA={'type':'object','additionalProperties':False,'properties':{**{k:{'type':'string','maxLength':n} for k,n in FIELDS.items()},'template':{'type':'string','enum':['everyday','nature']},'card_type':{'type':'string','enum':list(TYPES)},'rarity':{'type':'string','enum':list(RARITIES)},'card_finish':{'type':'string','enum':['classic','holo','reverse-holo','full-art']},'uncertain':{'type':'boolean'}},'required':[*FIELDS,'template','card_type','rarity','card_finish','uncertain']}
 # Constrain these fields during generation, as well as validating the result.
 for field in ('reading','sentence_reading'):
     SCHEMA['properties'][field]['pattern']='^[ぁ-ゖー 、。！？・]{1,'+str(FIELDS[field])+'}$'
@@ -45,6 +45,7 @@ def validate_entry(data):
         if any(ord(c)<32 for c in data[k]):raise ScanError('The model returned invalid control characters.')
     if data['template'] not in ('everyday','nature') or type(data['uncertain']) is not bool:raise ScanError('The model returned an invalid category.')
     if data['card_type'] not in TYPES:raise ScanError('The entry has an unknown field type. Scan again.')
+    if data['rarity'] not in RARITIES or data['card_finish'] not in FINISHES[data['rarity']]:raise ScanError('The rarity assessment was incomplete. Scan again.')
     if data['uncertain']:raise ScanError('The model is unsure what this is. Try another angle or a simpler background.')
     for key in ('reading','sentence_reading'):
         if not re.fullmatch(r'[ぁ-ゖー\s、。！？・]+',data[key]):raise ScanError('The model did not provide a hiragana reading. Please retry.')
@@ -90,6 +91,12 @@ def scan(payload,progress=lambda stage:None):
                 'translation: English translation. fact: one reliable English usage note. '
                 'template: nature for plants/animals/food, otherwise everyday. uncertain: true if the object is unclear. '
                 'card_type: choose household, nature, food, tool, technology, or wearable to match the object. '
+                'You must assess the rarity of the OBJECT as a collectible discovery, not its word or spelling. '
+                'rarity: Common for ordinary everyday objects (cups, apples, chairs); Uncommon for a less often encountered type; '
+                'Rare only for a visibly unusual, distinctive object; Ultra rare only for an exceptional identifiable discovery with clear visual evidence. '
+                'Default to Common when evidence is insufficient. Never infer value, authenticity, age, or rarity from decorative lighting or framing. '
+                'rarity_reason: one short English sentence explaining the visible evidence for your rarity judgment. '
+                'card_finish MUST match rarity: Common or Uncommon -> classic; Rare -> holo or reverse-holo; Ultra rare -> full-art. '
                 'IMPORTANT: reading and sentence_reading contain hiragana, never Latin letters or kanji. '
                 'For example, word コップ has reading こっぷ and romaji koppu; '
                 'sentence これはコップです。 has sentence_reading これはこっぷです。 '
@@ -107,7 +114,7 @@ def scan(payload,progress=lambda stage:None):
             if record and record[0]==data['reading']:verification='JMdict reading matched'
         data.pop('uncertain')
         data.update(id='word-'+hashlib.sha256((data['word']+'|'+data['reading']).encode()).hexdigest()[:16],category='Nature' if data['template']=='nature' else 'Everyday',asset='data:image/png;base64,'+base64.b64encode(png.getvalue()).decode(),number='NEW',source='Model draft',verification=verification,model=MODEL,segmentation='Apple Vision')
-        data['profile']=card_profile(data['word'],data['reading'],data['card_type'])
+        data['profile']=card_profile(data['word'],data['reading'],data['card_type'],data['rarity'],data['card_finish'])
         progress('ready')
         return data
 
@@ -149,10 +156,11 @@ class Handler(SimpleHTTPRequestHandler):
             return
         if url.path.startswith('/api/'):self.send_json({'error':'Not found'},404);return
         # Serve only public design assets, never source code, test files or local data.
-        public={'/','/index.html','/01-classic.html','/02-journal.html','/03-holo.html','/04-pocket.html','/05-studio.html','/app.css','/app.js','/data.js','/holo.js','/kana.json','/dex.css','/dex.js','/card-profile.js'}
+        public={'/','/index.html','/01-classic.html','/02-journal.html','/03-holo.html','/04-pocket.html','/05-studio.html','/app.css','/app.js','/data.js','/holo.js','/kana.json','/dex.css','/dex.js','/card-profile.js','/cards.css','/card-renderer.js','/card-motion.js','/card-lab.html','/card-lab.js'}
         decoded=unquote(url.path)
         allowed_asset=bool(re.fullmatch(r'/assets/[a-z-]+\.(?:svg|png|webp)',decoded) or re.fullmatch(r'/evidence/[a-z-]+\.png',decoded))
-        if decoded not in public and not allowed_asset:
+        allowed_vendor=bool(re.fullmatch(r'/vendor/pokemon-cards-css/(?:cards(?:/(?:base|basic|reverse-holo|regular-holo|trainer-gallery-holo))?\.css|LICENSE|README\.txt|UPSTREAM\.json)',decoded))
+        if decoded not in public and not allowed_asset and not allowed_vendor:
             self.send_error(404);return
         super().do_GET()
     def list_directory(self,path):self.send_error(404);return None

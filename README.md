@@ -1,7 +1,7 @@
 <p align="center"><img src="docs/media/mark.svg" width="68" alt="SpiralDex field unit"></p>
 <h1 align="center">SpiralDex</h1>
 <p align="center"><b>Your world, in Japanese.</b><br>A pocket field guide that turns everyday objects into words you remember.</p>
-<p align="center"><a href="https://edtireli.github.io/spiraldex/">Explore the demo</a> · <a href="https://github.com/edtireli/spiraldex/releases/tag/v0.2.0">Download v0.2.0</a> · <a href="#quick-start">Get started</a></p>
+<p align="center"><a href="https://edtireli.github.io/spiraldex/">Explore the demo</a> · <a href="https://github.com/edtireli/spiraldex/releases/tag/v0.3.0">Download v0.3.0</a> · <a href="#quick-start">Get started</a></p>
 
 ![SpiralDex’s camera-first Classic Dex field unit](docs/media/social.png)
 
@@ -9,7 +9,7 @@ Take a photo on your Android phone. Your Mac removes the background, identifies 
 
 SpiralDex brings the tactile red shell and discovery ritual of a classic handheld encyclopedia to the little things around you. Your morning cup becomes **カップ**. An apple becomes **りんご**. The language starts to feel like part of your world.
 
-**Early preview:** Android 9+ · macOS 14+ · Ollama · MIT licensed. New scans need an awake Mac on the same network. This is an Android app with a Mac companion; there is no iOS release yet.
+**Early preview:** Android 9+ · macOS 14+ · Ollama · GPL-3.0 distribution. New scans need an awake Mac on the same network. This is an Android app with a Mac companion; there is no iOS release yet.
 
 ## See it in motion
 
@@ -23,6 +23,8 @@ SpiralDex brings the tactile red shell and discovery ritual of a classic handhel
   <img src="docs/media/kana.png" width="29%" alt="The hiragana sound library">
 </p>
 
+[Compare the four card finishes](https://edtireli.github.io/spiraldex/demo/card-lab.html) — actual upstream base, reverse-holo, regular-holo, and gallery-holo styles, with phone tilt and pointer/touch lighting. This visual comparison deliberately shows one prepared object in all finishes; live rarity comes from the model.
+
 ## What you can do
 
 - **Discover through your camera.** Start with an empty optical scanner. Capture or choose a photo to begin scanning immediately.
@@ -30,6 +32,7 @@ SpiralDex brings the tactile red shell and discovery ritual of a classic handhel
 - **Make a word card.** Japanese spelling, hiragana reading, romanization, meaning, examples, and notes arrive with an automatically selected type, rarity, finish, HP, and field ratings.
 - **Hear the language.** Tap words, examples, or kana. Android uses an installed Japanese voice, including a slower playback option.
 - **Collect and recall.** Cards register automatically. Swipe right from Scanner → Card archive → Kana library; use the physical D-pad or arrow keys too. The main device does not scroll.
+- **Tilt to catch the light.** Cards rotate and move gently with your phone, including their foil reflections. Motion starts automatically in the Android card views. Recenter in inspection or turn it off in settings; reduced motion is respected. Sensor data stays on your phone.
 - **Explore kana.** 46 basic hiragana and 46 basic katakana, with sounds and examples.
 - **Use your own models.** HTTPS pairing, certificate pinning, and a private token connect the phone to your laptop. No cloud inference API is required.
 
@@ -37,7 +40,7 @@ SpiralDex brings the tactile red shell and discovery ritual of a classic handhel
 
 ### 1. Install the Android app
 
-Download **`SpiralDex-0.2.0.apk`** from [Releases](https://github.com/edtireli/spiraldex/releases/tag/v0.2.0), open it on your Android device, and allow installation from that source when Android asks. The APK is signed with the project's release key. It is a direct installation preview, not a Play Store release.
+Download **`SpiralDex-0.3.0.apk`** from [Releases](https://github.com/edtireli/spiraldex/releases/tag/v0.3.0), open it on your Android device, and allow installation from that source when Android asks. The APK is signed with the project's release key. It is a direct installation preview, not a Play Store release.
 
 ### 2. Prepare your Mac
 
@@ -49,7 +52,7 @@ ollama pull gemma3:12b
 
 Keep Ollama running. Gemma 3 12B is a substantial model; a Mac with 24 GB or more memory is recommended for this configuration. A different installed **vision-capable** model can be selected with `DEX_VISION_MODEL`; smaller alternatives have not been validated for this release.
 
-Download **`SpiralDex-Mac-Host-0.2.0.zip`**, extract it, and open **`Start SpiralDex.command`**. If macOS blocks an unsigned downloaded launcher, use its Open / Privacy & Security approval flow. The launcher:
+Download **`SpiralDex-Mac-Host-0.3.0.zip`**, extract it, and open **`Start SpiralDex.command`**. If macOS blocks an unsigned downloaded launcher, use its Open / Privacy & Security approval flow. The launcher:
 
 1. Creates a local Python environment and installs Pillow on first use.
 2. Uses the included universal Apple Silicon / Intel subject-extraction helper.
@@ -78,7 +81,7 @@ flowchart LR
     F --> G[Local collection + Japanese TTS]
 ```
 
-The model supplies bounded text fields and one of six types. Hiragana fields are constrained during generation and validated afterward. Rarity, HP, and the three field ratings are collectible game attributes, assigned deterministically from the word and reading. They stay consistent across rescans and are not physical measurements. It cannot supply HTML, scripts, arbitrary image URLs, or layouts. The host validates the response against a fixed contract; the app renders the card. Generated facts and labels can still be wrong. Background removal is not evidence that the classification is correct.
+The model supplies bounded text fields and one of six types. Hiragana fields are constrained during generation and validated afterward. The model judges the object’s rarity from visible evidence and returns its reason and finish. Common and uncommon entries stay non-holo; rare entries use holo or reverse holo, and ultra rare entries use full-art holo. No word hash determines rarity. HP and the three field ratings remain stable game attributes, not physical measurements. Existing entries without a model assessment show “Unassessed” until rescanned. It cannot supply HTML, scripts, arbitrary image URLs, or layouts. The host validates the response against a fixed contract; the app renders the card. Generated facts and labels can still be wrong. Background removal is not evidence that the classification is correct.
 
 Photos are resized and re-encoded before upload. Temporary processing files on the Mac are deleted after each scan. Saved cards contain the cutout and vocabulary data in the app's local IndexedDB. There is no account, collection sync, or telemetry in SpiralDex. See [privacy and storage](PRIVACY.md).
 
@@ -144,4 +147,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for browser tests, Android builds, signin
 
 See [TESTING.md](TESTING.md) for this release's verification and limits, [CHANGELOG.md](CHANGELOG.md) for changes, and [CREDITS.md](CREDITS.md) for assets and inspiration.
 
-SpiralDex is an independent learning project inspired by classic handheld field guides. It is not affiliated with Pokémon, Nintendo, or The Pokémon Company. The UI and card effects are original code; no Pokémon artwork is bundled.
+SpiralDex is an independent learning project inspired by classic handheld field guides. It is not affiliated with Pokémon, Nintendo, or The Pokémon Company. Card effects use the actual GPL-3.0 CSS from [Simon Goellner’s pokemon-cards-css](https://github.com/simeydotme/pokemon-cards-css), pinned and bundled locally. The vocabulary faces are SpiralDex HTML; no Pokémon card scans or illustrations are bundled. The combined distribution is GPL-3.0; original MIT notices are retained in `licenses/`. Corresponding source is included in each release.

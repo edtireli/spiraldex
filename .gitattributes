@@ -1,0 +1,4 @@
+# Preserve verbatim upstream CSS, including its original whitespace.
+web/vendor/pokemon-cards-css/** -whitespace
+android/app/src/main/assets/dex/vendor/pokemon-cards-css/** -whitespace
+docs/demo/vendor/pokemon-cards-css/** -whitespace

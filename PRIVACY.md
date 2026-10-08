@@ -12,4 +12,6 @@ Android pronunciation selects an installed Japanese voice that reports no networ
 
 The public demo does not request camera access or send pictures to a model API. Its prepared discoveries persist locally in a separate demo collection. GitHub Pages is the hosting provider and may collect standard request logs under GitHub's privacy policy.
 
+Phone orientation is used locally to tilt cards and change their reflections. Orientation samples are neither stored nor uploaded. Sampling pauses when cards are not visible or the app is in the background. You can switch phone tilt off; only that preference is saved. System reduced-motion settings disable the effect. Browsers that require motion permission ask only after you tap the enable button.
+
 Treat the pairing token like a password. The HTTPS host is intended for a trusted local network. Do not expose its port directly to the public internet. Regenerating an identity requires re-pairing the phone. Images and model text are treated as untrusted input; generated words and facts still need human review.

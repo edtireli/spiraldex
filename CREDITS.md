@@ -1,6 +1,6 @@
 # Credits and asset provenance
 
-SpiralDex's source code, UI, mark, and original card treatments are provided under the repository's MIT license. Sample object artwork was generated for this project with OpenAI's built-in image-generation tool on 2026-10-08, then copied into `web/assets/`; the original generated alpha is preserved. Screenshots and the walkthrough are captures of this project's actual sample UI.
+SpiralDex v0.3 includes GPL-3.0 card-effect code and distributes the combined app under GPL-3.0. Prior SpiralDex MIT notices remain in `licenses/MIT-SpiralDex-original.txt`. Sample object artwork was generated for this project with OpenAI's built-in image-generation tool on 2026-10-08, then copied into `web/assets/`; the original generated alpha is preserved. Screenshots and the walkthrough are captures of this project's actual sample UI.
 
 ## Image prompts
 
@@ -11,7 +11,7 @@ SpiralDex's source code, UI, mark, and original card treatments are provided und
 ## Inspiration
 
 - The classic Pokédex and collectible-card presentation informed the interaction direction. No Pokémon artwork, logos, or card scans are distributed here.
-- [Simon Goellner's pokemon-cards-css](https://github.com/simeydotme/pokemon-cards-css) inspired the idea of interactive foil finishes. SpiralDex uses its own small CSS/JavaScript implementation; no upstream code or artwork was copied. The linked project has its own license.
+- [Simon Goellner's pokemon-cards-css](https://github.com/simeydotme/pokemon-cards-css), copyright 2022 Simon Goellner (@simeydotme), supplies the actual CSS effects under GPL-3.0. `web/vendor/pokemon-cards-css/` contains verbatim `cards.css`, `base.css`, `basic.css`, `reverse-holo.css`, `regular-holo.css`, and `trainer-gallery-holo.css` from commit `acb1197633e749a1fba4412231db2f6581586d00`, the full upstream license, and a SHA-256 manifest. `web/cards.css` adapts the image-face layout to readable HTML and supplies a CSS foil input; `card-renderer.js` drives the upstream pointer/rotation variables. No upstream card artwork or texture images are copied or fetched. Upstream files remain unchanged. Corresponding app source and build scripts are provided in the release source ZIP.
 
 ## Dependencies and platform components
 

@@ -35,6 +35,15 @@ host_files += [f for folder in ('web', 'host') for f in (ROOT / folder).rglob('*
                if f.is_file() and '__pycache__' not in f.parts]
 host_files += list((ROOT / 'licenses').glob('*.txt'))
 archive(f'SpiralDex-Mac-Host-{VERSION}.zip', host_files, ROOT / 'host/INSTALL.md')
+if (ROOT / '.git').exists():
+    source_names = subprocess.check_output(['git', 'ls-files'], cwd=ROOT, text=True).splitlines()
+else:
+    source_names = (ROOT / 'SOURCE_FILES.txt').read_text().splitlines()
+source_files = [ROOT / name for name in source_names
+                if not Path(name).is_absolute() and '..' not in Path(name).parts and (ROOT / name).is_file()]
+archive(f'SpiralDex-Source-{VERSION}.zip', source_files)
+with zipfile.ZipFile(DIST / f'SpiralDex-Source-{VERSION}.zip', 'a', zipfile.ZIP_DEFLATED) as bundle:
+    bundle.writestr('SpiralDex/SOURCE_FILES.txt', '\n'.join(str(p.relative_to(ROOT)) for p in source_files) + '\n')
 archive(f'SpiralDex-Demo-{VERSION}.zip', [f for f in (ROOT / 'docs').rglob('*') if f.is_file()])
 checks = []
 for file in sorted(DIST.iterdir()):

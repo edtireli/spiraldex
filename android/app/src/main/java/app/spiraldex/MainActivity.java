@@ -4,6 +4,10 @@ import android.app.*;
 import android.os.*;
 import android.content.*;
 import android.graphics.*;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.net.Uri;
 import android.provider.MediaStore;
 import android.speech.tts.TextToSpeech;
@@ -34,7 +38,27 @@ public class MainActivity extends Activity {
  private WebView web; private TextToSpeech tts; private boolean voiceReady=false; private Uri cameraUri; private File cameraFile;
  private final Set<String> cancelled=ConcurrentHashMap.newKeySet();
  private android.content.SharedPreferences prefs;
+ private SensorManager sensors; private Sensor tiltSensor;
+ private boolean motionWanted=false,motionRegistered=false,resumed=false;
+ private long lastMotionNanos=0;
+ private final float[] motionMatrix=new float[9];
+ private final SensorEventListener motionListener=new SensorEventListener(){
+  @Override public void onAccuracyChanged(Sensor sensor,int accuracy){}
+  @Override public void onSensorChanged(SensorEvent event){
+   if(!resumed||!motionWanted||event.timestamp-lastMotionNanos<50_000_000L)return;
+   lastMotionNanos=event.timestamp;SensorManager.getRotationMatrixFromVector(motionMatrix,event.values);
+   int angle=getWindowManager().getDefaultDisplay().getRotation()*90;
+   js("window.DexMotion?.receive("+Arrays.toString(motionMatrix)+","+angle+")");
+  }
+ };
+ private void updateMotion(){
+  boolean wanted=resumed&&motionWanted&&tiltSensor!=null;
+  if(wanted&&!motionRegistered){lastMotionNanos=0;motionRegistered=sensors.registerListener(motionListener,tiltSensor,50_000);}
+  else if(!wanted&&motionRegistered){sensors.unregisterListener(motionListener);motionRegistered=false;}
+ }
  @Override public void onCreate(Bundle state){super.onCreate(state);prefs=getSharedPreferences("dex",MODE_PRIVATE);
+  sensors=(SensorManager)getSystemService(SENSOR_SERVICE);
+  if(sensors!=null){tiltSensor=sensors.getDefaultSensor(Sensor.TYPE_GAME_ROTATION_VECTOR);if(tiltSensor==null)tiltSensor=sensors.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);}
   getWindow().setStatusBarColor(Color.rgb(185,40,61));getWindow().setNavigationBarColor(Color.rgb(148,29,52));
   getWindow().setFlags(android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN,android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN);
   if((getApplicationInfo().flags & android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0)WebView.setWebContentsDebuggingEnabled(true);
@@ -66,6 +90,8 @@ public class MainActivity extends Activity {
  private void notice(String s){js("window.dexNativeNotice("+JSONObject.quote(s)+")");}
  private void reply(String id,int status,String body){js("window.dexNativeResult("+JSONObject.quote(id)+","+status+","+JSONObject.quote(body)+")");}
  private class Bridge {
+  @JavascriptInterface public boolean motionAvailable(){return tiltSensor!=null;}
+  @JavascriptInterface public void motion(boolean enabled){runOnUiThread(()->{motionWanted=enabled;updateMotion();});}
   @JavascriptInterface public void camera(){runOnUiThread(()->takePhoto());}
   @JavascriptInterface public void photo(){runOnUiThread(()->{Intent pick=new Intent(Intent.ACTION_GET_CONTENT).setType("image/*").addCategory(Intent.CATEGORY_OPENABLE);try{startActivityForResult(pick,21);}catch(ActivityNotFoundException e){notice("No photo picker is installed.");}});}
   @JavascriptInterface public void settings(){runOnUiThread(()->pairing());}
@@ -109,8 +135,8 @@ public class MainActivity extends Activity {
   }catch(SSLException e){result="{\"error\":\"Certificate check failed. Verify the Mac fingerprint in pairing settings.\"}";}catch(Exception e){}finally{active.remove(id);if(c!=null)c.disconnect();}
   if(cancelled.remove(id))return;reply(id,status,result);
  }
- @Override protected void onPause(){super.onPause();if(tts!=null)tts.stop();web.onPause();}
- @Override protected void onResume(){super.onResume();if(web!=null)web.onResume();configureVoice();}
- @Override protected void onDestroy(){for(HttpsURLConnection c:active.values())c.disconnect();io.shutdownNow();if(tts!=null)tts.shutdown();web.removeJavascriptInterface("DexNative");web.destroy();super.onDestroy();}
+ @Override protected void onPause(){resumed=false;updateMotion();super.onPause();if(tts!=null)tts.stop();web.onPause();}
+ @Override protected void onResume(){super.onResume();resumed=true;if(web!=null){web.onResume();js("window.DexMotion?.recenter()");}updateMotion();configureVoice();}
+ @Override protected void onDestroy(){resumed=false;updateMotion();for(HttpsURLConnection c:active.values())c.disconnect();io.shutdownNow();if(tts!=null)tts.shutdown();web.removeJavascriptInterface("DexNative");web.destroy();super.onDestroy();}
  @Override public void onBackPressed(){js("window.dexBack?.()");}
 }

@@ -30,7 +30,7 @@
 
   function normalize(record, index) {
     const cardType = record.card_type || (record.template === 'nature' ? 'nature' : 'household');
-    return {...record, card_type:cardType, profile:DexProfile(record.word, record.reading, cardType),
+    return {...record, card_type:cardType, profile:DexProfile(record.word, record.reading, cardType, record.rarity, record.card_finish),
       number:/^\d+$/.test(record.number || '') ? record.number : String(index + 1).padStart(3,'0')};
   }
   async function initialize() {
@@ -116,22 +116,11 @@
     if (title) title.textContent = stageText[stage][0]; if (detail) detail.textContent = stageText[stage][1];
     document.querySelector('.scanning-screen')?.setAttribute('data-stage',stage);
   }
-  const raritySymbol = p => p.rarity === 'Common' ? '●' : p.rarity === 'Uncommon' ? '◆' : p.rarity === 'Rare' ? '✦' : '✦✦';
-  function cardMarkup(record) {
-    const p = record.profile;
-    return `<article class="dex-card type-${p.type} ${p.finish === 'foil' ? 'foil' : ''}" aria-label="${esc(record.english)} discovery card">
-      <header class="card-heading"><div><button class="word" data-speak="${esc(record.reading)}" aria-label="Hear ${esc(record.word)}"><span lang="ja">${esc(record.word)}</span>${icon('sound')}</button><p class="reading"><span lang="ja">${esc(record.reading)}</span> <span>· ${esc(record.romaji)}</span></p></div><div class="hp"><small>HP</small><strong>${p.hp}</strong><span class="type-mark">${p.type === 'nature' || p.type === 'food' ? '✿' : p.type === 'technology' ? 'ϟ' : '◇'}</span></div></header>
-      <div class="card-art"><img src="${asset(record)}" alt="${esc(record.english)} with its background removed"><span class="art-rings" aria-hidden="true"></span></div>
-      <div class="specimen-line"><span>NO. ${esc(record.number)} · ${esc(p.label)}</span><strong>${esc(record.english)}</strong></div>
-      <p class="card-definition">${esc(record.description)}</p>
-      <div class="card-move"><span class="move-symbol" aria-hidden="true">✦</span><div><button data-speak="${esc(record.sentence_reading)}" lang="ja">${esc(record.sentence)} ${icon('sound')}</button><p>${esc(record.translation)}</p></div></div>
-      <div class="card-stats">${Object.entries(p.stats).map(([name,value]) => `<span><small>${name}</small><b>${value}</b><i style="--rating:${value}%"></i></span>`).join('')}</div>
-      <footer class="card-footer"><span>SPIRALDEX · FIELD ARCHIVE</span><span>${esc(p.rarity)} ${raritySymbol(p)}</span></footer>
-    </article>`;
-  }
+  const raritySymbol = p => !p.assessed ? '–' : p.rarity === 'Common' ? '●' : p.rarity === 'Uncommon' ? '◆' : p.rarity === 'Rare' ? '✦' : '✦✦';
+  function cardMarkup(record) { return DexCards.render(record); }
   function cardView() {
     if (!entry) return scanner();
-    return `<div class="card-screen ${fresh ? 'new-entry' : ''}">${screenHeader(fresh ? '✦ NEW ENTRY UNLOCKED' : 'FIELD ARCHIVE', `NO. ${esc(entry.number)}`)}${cardMarkup(entry)}
+    return `<div class="card-screen ${fresh ? 'new-entry' : ''}">${screenHeader(fresh ? '✦ NEW ENTRY UNLOCKED' : 'FIELD ARCHIVE', `NO. ${esc(entry.number)}`)}<div class="card-stage">${cardMarkup(entry)}</div>
       <div class="card-actions"><button class="soft-button" data-action="inspect">${icon('search')} Inspect entry</button><button class="action" data-action="scanner">${icon('camera')} Next discovery</button></div>
       ${!stored ? '<button class="storage-warning" data-action="save">Memory full · entry not stored. Tap to retry.</button>' : `<p class="registered">${icon('check')} Registered in your Dex</p>`}
     </div>`;
@@ -144,7 +133,7 @@
     const count = innerHeight < 700 ? 4 : 6, total = Math.ceil(cards.length/count);
     collectionPage = Math.min(collectionPage,total-1);
     const list = [...cards].reverse().slice(collectionPage*count,(collectionPage+1)*count);
-    return `<div class="archive-screen">${screenHeader('CARD ARCHIVE', `${String(cards.length).padStart(3,'0')} REGISTERED`)}<div class="archive-grid">${list.map(record => `<button class="archive-card type-${record.profile.type}" data-open="${esc(record.id)}"><span class="mini-rarity">${esc(record.profile.rarity)} ${raritySymbol(record.profile)}</span><img src="${asset(record)}" alt="${esc(record.english)}"><strong lang="ja">${esc(record.word)}</strong><span>${esc(record.reading)}</span><small>${esc(record.english)}</small></button>`).join('')}</div>${pager(collectionPage,total,'cards-prev','cards-next')}<button class="text-button" data-action="review">Practice your discoveries ↻</button></div>`;
+    return `<div class="archive-screen">${screenHeader('CARD ARCHIVE', `${String(cards.length).padStart(3,'0')} REGISTERED`)}<div class="archive-grid">${list.map(record => `<div class="archive-card card-thumb"><div class="thumb-print" inert>${cardMarkup(record)}</div><button class="archive-open" data-open="${esc(record.id)}" aria-label="Inspect ${esc(record.word)}, ${esc(record.english)}, ${esc(record.profile.rarity)}"></button></div>`).join('')}</div>${pager(collectionPage,total,'cards-prev','cards-next')}<button class="text-button" data-action="review">Practice your discoveries ↻</button></div>`;
   }
   function kanaView() {
     const list = kanaData?.[script] || [], total = Math.max(1,Math.ceil(list.length/15));
@@ -153,7 +142,7 @@
     return `<div class="kana-screen">${screenHeader('KANA LIBRARY','音')}<div class="script-switch"><button data-script="hiragana" aria-pressed="${script==='hiragana'}">あ Hiragana</button><button data-script="katakana" aria-pressed="${script==='katakana'}">ア Katakana</button></div><div class="kana-preview">${chosen ? `<button class="kana-large" data-speak="${esc(chosen.kana)}" aria-label="Hear ${esc(chosen.kana)}" lang="ja">${esc(chosen.kana)}</button><div><strong>${esc(chosen.romaji)}</strong><p lang="ja">${esc(chosen.example?.w)}</p><small>${esc(chosen.example?.g)}</small></div><button class="round-control" data-speak="${esc(chosen.kana)}" aria-label="Replay sound">${icon('sound')}</button>` : '<p role="status">Opening sound library…</p>'}</div><div class="kana-keys">${visible.map(k => `<button class="kana-key ${chosen?.kana===k.kana?'selected':''}" data-kana="${k.kana}" aria-label="Hear ${esc(k.kana)}, ${esc(k.romaji)}"><strong lang="ja">${k.kana}</strong><small>${esc(k.romaji)}</small></button>`).join('')}</div>${pager(kanaPage,total,'kana-prev','kana-next')}<button class="text-button" data-action="kana-notes">Pronunciation field notes</button></div>`;
   }
   function settingsView() {
-    return `<div class="settings-screen">${screenHeader('FIELD UNIT SETTINGS','SD–01')}<h1>Field station link</h1><p>Connect once. Then explore.</p><div class="link-status ${health?.vision_available && health?.segmentation_available ? 'online' : ''}" role="status"><b>${checking ? 'Checking the signal…' : health ? 'Field station linked' : 'No field signal'}</b><p>${checking ? 'Contacting your paired station.' : health ? health.vision_available && health.segmentation_available ? 'The scanner is ready for discoveries.' : 'The station is connected, but its scanner is not ready.' : esc(connectionError || 'Pair this unit with your Mac to identify new discoveries.')}</p></div>${demo ? '<p class="settings-note">This online demonstration uses prepared discoveries. No photos are uploaded and no model is called.</p>' : `<button class="action" data-action="pair">${window.DexNative ? 'Pair with your Mac' : 'Connection instructions'}</button><button class="soft-button" data-action="check" ${checking?'disabled':''}>Test connection</button><details><summary>Connection details</summary><p>Run Start SpiralDex.command on the Mac and keep it awake. Use its HTTPS address, token, and certificate fingerprint. Both devices need to be on the same trusted network.</p><p>Recognition and background removal run on your Mac. New discoveries need this link; your archive and installed Japanese voices work offline.</p></details>`}<button class="text-button" data-action="scanner">Return to scanner</button></div>`;
+    return `<div class="settings-screen">${screenHeader('FIELD UNIT SETTINGS','SD–01')}<h1>Field station link</h1><p>Connect once. Then explore.</p><div class="link-status ${health?.vision_available && health?.segmentation_available ? 'online' : ''}" role="status"><b>${checking ? 'Checking the signal…' : health ? 'Field station linked' : 'No field signal'}</b><p>${checking ? 'Contacting your paired station.' : health ? health.vision_available && health.segmentation_available ? 'The scanner is ready for discoveries.' : 'The station is connected, but its scanner is not ready.' : esc(connectionError || 'Pair this unit with your Mac to identify new discoveries.')}</p></div>${demo ? '<p class="settings-note">This online demonstration uses prepared discoveries. No photos are uploaded and no model is called.</p>' : `<button class="action" data-action="pair">${window.DexNative ? 'Pair with your Mac' : 'Connection instructions'}</button><button class="soft-button" data-action="check" ${checking?'disabled':''}>Test connection</button><details><summary>Connection details</summary><p>Run Start SpiralDex.command on the Mac and keep it awake. Use its HTTPS address, token, and certificate fingerprint. Both devices need to be on the same trusted network.</p><p>Recognition and background removal run on your Mac. New discoveries need this link; your archive and installed Japanese voices work offline.</p></details>`}<button class="text-button" data-action="scanner">Return to scanner</button><button class="text-button" data-action="credits">About &amp; licenses</button>${DexMotion.controls()}</div>`;
   }
   function reviewView() {
     if (!cards.length) return collectionView();
@@ -178,15 +167,9 @@
     root.querySelectorAll('[data-kana]').forEach(button => button.addEventListener('click',() => { selectedKana=kanaData[script].find(k=>k.kana===button.dataset.kana);render();void speak(selectedKana.kana); }));
     document.getElementById('photo-input').onchange = event => upload(event.target.files[0]);
     root.querySelector('#subject-frame')?.addEventListener('click',selectTarget);
-    const card = root.querySelector('.dex-card');
-    card?.addEventListener('pointermove',event => {
-      if (reduced.matches || event.pointerType !== 'mouse') return;
-      const r=card.getBoundingClientRect(),x=(event.clientX-r.left)/r.width,y=(event.clientY-r.top)/r.height;
-      card.style.setProperty('--glare-x',`${x*100}%`);card.style.setProperty('--glare-y',`${y*100}%`);
-      card.style.setProperty('--rx',`${(y-.5)*-5}deg`);card.style.setProperty('--ry',`${(x-.5)*6}deg`);
-    });
-    card?.addEventListener('pointerleave',()=>{card.style.setProperty('--rx','0deg');card.style.setProperty('--ry','0deg')});
+    DexCards.mount(root);
   }
+
   function action(name) {
     switch(name) {
       case 'camera': return camera(); case 'photo': return choosePhoto(); case 'shutter': return shutter();
@@ -199,6 +182,10 @@
       case 'hear': if(entry) return speak(entry.reading);return;
       case 'cards-prev': collectionPage--;return render();case 'cards-next':collectionPage++;return render();
       case 'kana-prev':kanaPage--;selectedKana=null;return render();case 'kana-next':kanaPage++;selectedKana=null;return render();
+      case 'credits': {
+        const dialog=showDialog('About the field unit','<p>SpiralDex 0.3.0 · © 2026 SpiralDex contributors</p><p>Card effects: <b>pokemon-cards-css</b>, © 2022 Simon Goellner (@simeydotme). Free software under GPL-3.0, without warranty. You may redistribute and modify it under that license. Prior MIT notices are retained.</p><p>Corresponding source: github.com/edtireli/spiraldex/releases/tag/v0.3.0<br>Card effects: github.com/simeydotme/pokemon-cards-css</p><button class="soft-button" data-license>Read the GPL-3.0 license</button>');
+        dialog.querySelector('[data-license]').onclick=async()=>{try{const response=await fetch('vendor/pokemon-cards-css/LICENSE');if(!response.ok)throw Error();const text=await response.text();dialog.close();showDialog('GPL-3.0 license',`<pre style="white-space:pre-wrap;font:11px/1.6 monospace">${esc(text)}</pre>`);}catch{toast('The license could not be opened. It is also included with the release source.');}};return;
+      }
       case 'kana-notes':return showDialog('Sound field notes','<p>Hiragana and katakana each have 46 basic characters. Tap a sign to hear its sound.</p><p>On their own, は and へ sound “ha” and “he”. As particles they are “wa” and “e”. を is usually “o”. Voiced and combined sounds will join the library in a future update.</p>');
       case 'review':reviewIndex=0;answer=false;return navigate('review');case 'reveal':answer=true;return render();
       case 'review-next':reviewIndex++;answer=false;return render();
@@ -293,7 +280,7 @@
     if(!saved)toast('Dex memory is full. This discovery is visible, but could not be stored.');
   }
   async function demoScan() {
-    if(busy)return;const record={...SAMPLES[[1,2,0][demoCounter++%3]]};record.card_type=record.id==='apple'?'food':'household';
+    if(busy)return;const record={...SAMPLES[[1,2,0][demoCounter++%3]]};record.card_type=record.id==='apple'?'food':'household';record.rarity='Common';record.card_finish='classic';record.rarity_reason='An ordinary everyday object, widely encountered.';
     photo=record.asset;target=null;error='';view='scanner';section=0;busy=true;stage='scanning';const ticket=++epoch;render();
     for(const step of ['scanning','isolating','decoding']){if(ticket!==epoch)return;setStage(step);await new Promise(resolve=>setTimeout(resolve,650));}
     if(ticket===epoch)await register(record,true,ticket);
@@ -312,7 +299,9 @@
   function inspect() {
     if(!entry)return;
     const p=entry.profile;
-    const dialog=showDialog(`ENTRY ${esc(entry.number)}`,`<div class="inspection-word"><h3 lang="ja">${esc(entry.word)}</h3><p>${esc(entry.reading)} · ${esc(entry.romaji)}</p><b>${esc(entry.english)}</b></div><div class="inspection-tags"><span>${esc(p.label)}</span><span>${esc(p.rarity)} ${raritySymbol(p)}</span><span>HP ${p.hp}</span></div><h4>Field notes</h4><p>${esc(entry.description)}</p><p>${esc(entry.fact)}</p><h4>Voice record</h4><button class="example-audio" data-example lang="ja">${esc(entry.sentence)} ${icon('sound')}</button><p lang="ja">${esc(entry.sentence_reading)}</p><p>${esc(entry.translation)}</p><button class="soft-button" data-slow>Hear the name slowly</button><details><summary>About this entry</summary><p>Rarity, HP, and field ratings are collectible game attributes. They are assigned automatically and stay consistent for this word.</p><p>Field notes are generated and may need correction. Check the name and reading when an entry looks unfamiliar.</p><p>${esc(entry.verification==='JMdict reading matched'?'Spelling and reading matched the local dictionary.':'')}</p></details><button class="text-button" data-correct>Correct this entry</button>`);
+    const dialog=showDialog(`ENTRY ${esc(entry.number)}`,`<div class="inspection-card" data-no-swipe>${cardMarkup(entry)}</div>${DexMotion.controls()}<div class="inspection-word"><h3 lang="ja">${esc(entry.word)}</h3><p>${esc(entry.reading)} · ${esc(entry.romaji)}</p><b>${esc(entry.english)}</b></div><div class="inspection-tags"><span>${esc(p.label)}</span><span>${esc(p.rarity)} ${raritySymbol(p)}</span><span>HP ${p.hp}</span></div><h4>Rarity assessment</h4><p>${esc(entry.rarity_reason || 'This older entry has no model rarity assessment. Scan it again to have the Dex assess it.')}</p><h4>Field notes</h4><p>${esc(entry.description)}</p><p>${esc(entry.fact)}</p><h4>Voice record</h4><button class="example-audio" data-example lang="ja">${esc(entry.sentence)} ${icon('sound')}</button><p lang="ja">${esc(entry.sentence_reading)}</p><p>${esc(entry.translation)}</p><button class="soft-button" data-slow>Hear the name slowly</button><details><summary>About this entry</summary><p>The model judges object rarity from visible evidence; it can be wrong. Rare entries receive holographic finishes. HP and field ratings are stable game attributes, not real measurements.</p><p>Field notes are generated and may need correction. Check the name and reading when an entry looks unfamiliar.</p><p>${esc(entry.verification==='JMdict reading matched'?'Spelling and reading matched the local dictionary.':'')}</p></details><button class="text-button" data-correct>Correct this entry</button>`);
+    DexCards.mount(dialog);
+    dialog.querySelectorAll('[data-speak]').forEach(button=>button.onclick=()=>speak(button.dataset.speak));
     dialog.querySelector('[data-example]').onclick=()=>speak(entry.sentence_reading);
     dialog.querySelector('[data-slow]').onclick=()=>speak(entry.reading,true);
     dialog.querySelector('[data-correct]').onclick=()=>{dialog.close();correctEntry();};
@@ -320,7 +309,7 @@
   function correctEntry() {
     const dialog=showDialog('Correct field record',`<form><label>Japanese name<input name="word" maxlength="40" required value="${esc(entry.word)}"></label><label>Hiragana reading<input name="reading" maxlength="60" required pattern="[ぁ-ゖー ・]+" value="${esc(entry.reading)}"></label><label>English meaning<input name="english" maxlength="80" required value="${esc(entry.english)}"></label><p class="small-print">Changing the name clears the old example and notes so they cannot describe the wrong object.</p><button class="action">Save correction</button></form>`);
     dialog.querySelector('form').onsubmit=async event=>{event.preventDefault();const data=new FormData(event.target),word=data.get('word').trim(),reading=data.get('reading').trim(),english=data.get('english').trim();if(!word||!reading||!english)return;
-      const updated={...entry,word,reading,english,romaji:'',source:'User corrected',description:english,sentence:word,sentence_reading:reading,translation:english,fact:'This field record was corrected by you.'};
+      const updated={...entry,word,reading,english,rarity:null,card_finish:'classic',rarity_reason:'Scan this corrected object again for a new rarity assessment.',romaji:'',source:'User corrected',description:english,sentence:word,sentence_reading:reading,translation:english,fact:'This field record was corrected by you.'};
       dialog.close();await register(updated,false);
     };
   }

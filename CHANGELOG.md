@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.0 — 2026-10-08
+
+- Integrate verbatim, pinned pokemon-cards-css base, reverse-holo, regular-holo, and gallery-holo styles with touch and pointer lighting.
+- Add smoothed phone orientation for card tilt, subtle movement, and foil lighting; native Android sensors, browser permission flow, recenter/off controls, reduced motion, and background suspension.
+- Rebuild card faces with trading-card proportions, gold/silver frames, illustration panels, ability/attack typography, and printed stat strips; use the same faces in the archive.
+- Let the model assess object rarity and provide its reason and finish; remove hash-generated rarity. Common/uncommon stays non-holo, rare gets holo/reverse holo, ultra rare gets full-art holo.
+- Preserve new rarity assessments across saving/reload. Older entries show Unassessed until rescanned.
+- Add a four-finish comparison page, upstream attribution/license, hash verification, and corresponding-source release ZIP.
+- Distribute the integrated app under GPL-3.0, preserving previous MIT notices.
+
 ## 0.2.0 — 2026-10-08
 
 - Camera-first Classic Dex, without starter objects, a scrolling home feed, or bottom navigation.
