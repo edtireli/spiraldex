@@ -10,6 +10,6 @@ Saved cards include their isolated images and vocabulary in IndexedDB on that de
 
 Android pronunciation selects an installed Japanese voice that reports no network requirement. The browser demo uses a Japanese voice offered by the browser; that voice provider may use network services. The Mac preview can fall back to the macOS `say` voice.
 
-The public demo does not request camera access or send pictures to a model API. Its sample choices persist locally. GitHub Pages is the hosting provider and may collect standard request logs under GitHub's privacy policy.
+The public demo does not request camera access or send pictures to a model API. Its prepared discoveries persist locally in a separate demo collection. GitHub Pages is the hosting provider and may collect standard request logs under GitHub's privacy policy.
 
 Treat the pairing token like a password. The HTTPS host is intended for a trusted local network. Do not expose its port directly to the public internet. Regenerating an identity requires re-pairing the phone. Images and model text are treated as untrusted input; generated words and facts still need human review.

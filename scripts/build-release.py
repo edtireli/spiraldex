@@ -1,6 +1,7 @@
 """Build locally. No GitHub runner or remote build service is required."""
 from pathlib import Path
 import hashlib
+import json
 import os
 import shutil
 import subprocess
@@ -8,7 +9,7 @@ import sys
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = '0.1.0'
+VERSION = json.loads((ROOT / 'package.json').read_text())['version']
 DIST = ROOT / 'dist' / VERSION
 DIST.mkdir(parents=True, exist_ok=True)
 subprocess.run([sys.executable, str(ROOT / 'scripts/sync-web.py')], check=True)

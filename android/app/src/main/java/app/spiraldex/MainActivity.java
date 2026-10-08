@@ -36,6 +36,7 @@ public class MainActivity extends Activity {
  private android.content.SharedPreferences prefs;
  @Override public void onCreate(Bundle state){super.onCreate(state);prefs=getSharedPreferences("dex",MODE_PRIVATE);
   getWindow().setStatusBarColor(Color.rgb(185,40,61));getWindow().setNavigationBarColor(Color.rgb(148,29,52));
+  getWindow().setFlags(android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN,android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN);
   if((getApplicationInfo().flags & android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0)WebView.setWebContentsDebuggingEnabled(true);
   web=new WebView(this);web.setBackgroundColor(Color.rgb(185,40,61));setContentView(web);
   WebSettings s=web.getSettings();s.setJavaScriptEnabled(true);s.setDomStorageEnabled(true);s.setAllowFileAccess(false);s.setAllowContentAccess(false);s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);s.setMediaPlaybackRequiresUserGesture(true);
@@ -63,13 +64,14 @@ public class MainActivity extends Activity {
  private WebResourceResponse blocked(){return new WebResourceResponse("text/plain","UTF-8",403,"Forbidden",Collections.emptyMap(),new ByteArrayInputStream(new byte[0]));}
  private void js(String code){runOnUiThread(()->{if(!isFinishing()&&!isDestroyed())web.evaluateJavascript(code,null);});}
  private void notice(String s){js("window.dexNativeNotice("+JSONObject.quote(s)+")");}
+ private void reply(String id,int status,String body){js("window.dexNativeResult("+JSONObject.quote(id)+","+status+","+JSONObject.quote(body)+")");}
  private class Bridge {
   @JavascriptInterface public void camera(){runOnUiThread(()->takePhoto());}
   @JavascriptInterface public void photo(){runOnUiThread(()->{Intent pick=new Intent(Intent.ACTION_GET_CONTENT).setType("image/*").addCategory(Intent.CATEGORY_OPENABLE);try{startActivityForResult(pick,21);}catch(ActivityNotFoundException e){notice("No photo picker is installed.");}});}
   @JavascriptInterface public void settings(){runOnUiThread(()->pairing());}
   @JavascriptInterface public void speak(String text,boolean slow){if(text==null||text.length()>150||!text.matches("[ぁ-ゖァ-ヶ一-龯ー\\s、。！？・]+"))return;runOnUiThread(()->{if(!voiceReady){new AlertDialog.Builder(MainActivity.this).setTitle("Japanese voice needed").setMessage("Install a Japanese device voice to hear words and kana offline.").setPositiveButton("Voice settings",(d,w)->{try{startActivity(new Intent("com.android.settings.TTS_SETTINGS"));}catch(Exception e){notice("Open Android settings → Text-to-speech.");}}).setNegativeButton("Later",null).show();return;}tts.setSpeechRate(slow?.65f:.85f);tts.speak(text,TextToSpeech.QUEUE_FLUSH,null,"dex-word");});}
   @JavascriptInterface public void cancel(String id){if(id==null||id.length()>24)return;cancelled.add(id);HttpsURLConnection c=active.remove(id);if(c!=null)c.disconnect();}
-  @JavascriptInterface public void request(String id,String path,String body){if(id==null||!id.matches("[0-9]{1,16}")||!("/api/health".equals(path)||"/api/scan".equals(path))||body==null||body.length()>9*1024*1024)return;io.submit(()->requestRemote(id,path,body));}
+  @JavascriptInterface public void request(String id,String path,String body){if(id==null||!id.matches("[0-9]{1,16}")||path==null||!("/api/health".equals(path)||"/api/scan".equals(path)||path.matches("/api/scan/status\\?id=[a-f0-9]{32}"))||body==null||body.length()>9*1024*1024)return;io.submit(()->requestRemote(id,path,body));}
  }
  private void takePhoto(){
   try{File dir=new File(getCacheDir(),"camera");dir.mkdirs();cameraFile=new File(dir,"capture.jpg");cameraUri=FileProvider.getUriForFile(this,getPackageName()+".files",cameraFile);
@@ -98,17 +100,17 @@ public class MainActivity extends Activity {
  private String encrypt(String text)throws Exception{Cipher c=Cipher.getInstance("AES/GCM/NoPadding");c.init(Cipher.ENCRYPT_MODE,key());return Base64.getEncoder().encodeToString(c.getIV())+":"+Base64.getEncoder().encodeToString(c.doFinal(text.getBytes(StandardCharsets.UTF_8)));}
  private String secret(String name){try{String[] parts=prefs.getString(name,"").split(":");if(parts.length!=2)return "";Cipher c=Cipher.getInstance("AES/GCM/NoPadding");c.init(Cipher.DECRYPT_MODE,key(),new GCMParameterSpec(128,Base64.getDecoder().decode(parts[0])));return new String(c.doFinal(Base64.getDecoder().decode(parts[1])),StandardCharsets.UTF_8);}catch(Exception e){return "";}}
  private void requestRemote(String id,String path,String body){HttpsURLConnection c=null;int status=503;String result="{\"error\":\"The Mac could not be reached. Check pairing and keep it awake.\"}";
-  try{String address=prefs.getString("address",""),token=secret("token"),pin=prefs.getString("fingerprint","");if(address.isEmpty()||token.isEmpty()||pin.isEmpty())throw new IOException("Not paired");
+  try{String address=prefs.getString("address",""),token=secret("token"),pin=prefs.getString("fingerprint","");if(address.isEmpty()||token.isEmpty()||pin.isEmpty()){reply(id,428,"{\"error\":\"Pairing needed. Open Field station settings to link your Mac.\"}");return;}
    final String expected=pin;
    X509TrustManager trust=new X509TrustManager(){public X509Certificate[] getAcceptedIssuers(){return new X509Certificate[0];}public void checkClientTrusted(X509Certificate[] chain,String auth)throws java.security.cert.CertificateException{throw new java.security.cert.CertificateException();}public void checkServerTrusted(X509Certificate[] chain,String auth)throws java.security.cert.CertificateException{try{if(chain.length==0)throw new Exception();chain[0].checkValidity();byte[] hash=MessageDigest.getInstance("SHA-256").digest(chain[0].getEncoded());StringBuilder hex=new StringBuilder();for(byte b:hash)hex.append(String.format("%02x",b));if(!MessageDigest.isEqual(hex.toString().getBytes(StandardCharsets.US_ASCII),expected.getBytes(StandardCharsets.US_ASCII)))throw new Exception();}catch(Exception e){throw new java.security.cert.CertificateException("Pinned certificate does not match",e);}}};
    SSLContext tls=SSLContext.getInstance("TLS");tls.init(null,new TrustManager[]{trust},new SecureRandom());c=(HttpsURLConnection)new URL(address+path).openConnection();c.setSSLSocketFactory(tls.getSocketFactory());c.setHostnameVerifier((hostname,session)->hostname.equals(URI.create(address).getHost()));c.setInstanceFollowRedirects(false);c.setConnectTimeout(10000);c.setReadTimeout(240000);c.setRequestProperty("Authorization","Bearer "+token);active.put(id,c);if(cancelled.remove(id))return;
    if(!body.isEmpty()){c.setRequestMethod("POST");c.setDoOutput(true);c.setRequestProperty("Content-Type","application/json");byte[] bytes=body.getBytes(StandardCharsets.UTF_8);c.setFixedLengthStreamingMode(bytes.length);try(OutputStream out=c.getOutputStream()){out.write(bytes);}}
    status=c.getResponseCode();try(InputStream in=status>=200&&status<300?c.getInputStream():c.getErrorStream()){if(in==null)throw new IOException();ByteArrayOutputStream out=new ByteArrayOutputStream();byte[] buffer=new byte[8192];int n;while((n=in.read(buffer))!=-1){if(out.size()+n>10*1024*1024)throw new IOException("Response too large");out.write(buffer,0,n);}result=out.toString(StandardCharsets.UTF_8.name());new JSONObject(result);}
   }catch(SSLException e){result="{\"error\":\"Certificate check failed. Verify the Mac fingerprint in pairing settings.\"}";}catch(Exception e){}finally{active.remove(id);if(c!=null)c.disconnect();}
-  if(cancelled.remove(id))return;js("window.dexNativeResult("+JSONObject.quote(id)+","+status+","+JSONObject.quote(result)+")");
+  if(cancelled.remove(id))return;reply(id,status,result);
  }
  @Override protected void onPause(){super.onPause();if(tts!=null)tts.stop();web.onPause();}
  @Override protected void onResume(){super.onResume();if(web!=null)web.onResume();configureVoice();}
  @Override protected void onDestroy(){for(HttpsURLConnection c:active.values())c.disconnect();io.shutdownNow();if(tts!=null)tts.shutdown();web.removeJavascriptInterface("DexNative");web.destroy();super.onDestroy();}
- @Override public void onBackPressed(){js("document.querySelector('nav [data-go=home]').click()");}
+ @Override public void onBackPressed(){js("window.dexBack?.()");}
 }

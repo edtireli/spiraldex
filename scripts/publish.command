@@ -4,8 +4,9 @@
 set -euo pipefail
 cd "${0:A:h:h}"
 repo='edtireli/spiraldex'
-tag='v0.1.0'
-release_dir='dist/0.1.0'
+version='0.2.0'
+tag="v$version"
+release_dir="dist/$version"
 
 for tool in git gh shasum; do
   command -v "$tool" >/dev/null || { print "Install $tool before publishing."; exit 1; }
@@ -19,7 +20,7 @@ gh auth status
 [[ -f "$release_dir/SHA256SUMS" ]] || { print 'The prebuilt release files are missing. Run the documented local build first.'; exit 1; }
 ( cd "$release_dir"; shasum -a 256 -c SHA256SUMS )
 
-print '\nPublishing SpiralDex source and the prebuilt v0.1.0 preview…'
+print '\nPublishing SpiralDex source and the prebuilt v0.2.0 Field Unit update…'
 if ! gh repo view "$repo" --json name >/dev/null 2>&1; then
   gh repo create "$repo" --public \
     --description 'Your world, in Japanese. A classic pocket field guide powered by models on your own Mac.' \
@@ -30,13 +31,13 @@ git -c 'credential.helper=!gh auth git-credential' push origin "$tag"
 
 if ! gh release view "$tag" --repo "$repo" >/dev/null 2>&1; then
   gh release create "$tag" --repo "$repo" --verify-tag --prerelease \
-    --title 'SpiralDex v0.1.0 — Classic Dex preview' \
-    --notes-file 'release-notes/v0.1.0.md'
+    --title "SpiralDex v$version — Field Unit" \
+    --notes-file "release-notes/$tag.md"
 fi
 
 download_dir=$(mktemp -d)
 trap 'rm -rf "$download_dir"' EXIT
-files=("$release_dir/SpiralDex-0.1.0.apk" "$release_dir/SpiralDex-Mac-Host-0.1.0.zip" "$release_dir/SpiralDex-Demo-0.1.0.zip" "$release_dir/SHA256SUMS")
+files=("$release_dir/SpiralDex-$version.apk" "$release_dir/SpiralDex-Mac-Host-$version.zip" "$release_dir/SpiralDex-Demo-$version.zip" "$release_dir/SHA256SUMS")
 for file in "${files[@]}"; do
   name="${file:t}"
   existing=$(gh api "repos/$repo/releases/tags/$tag" --jq ".assets[] | select(.name == \"$name\") | .id")
