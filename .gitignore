@@ -1,0 +1,17 @@
+.DS_Store
+__pycache__/
+*.pyc
+.venv/
+node_modules/
+test-results/
+dist/
+android/.gradle/
+android/**/build/
+android/local.properties
+android/signing.properties
+host/segment
+*.jks
+*.keystore
+*.pem
+.env
+publish.log

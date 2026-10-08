@@ -1,0 +1,12 @@
+{
+  "name": "spiraldex",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A pocket field guide to Japanese, powered by your own Mac",
+  "scripts": {
+    "sync": "python3 scripts/sync-web.py",
+    "test": "node tests/ui.cjs",
+    "screenshots": "node scripts/capture-demo.cjs"
+  },
+  "devDependencies": { "playwright": "1.62.1" }
+}

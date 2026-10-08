@@ -1,0 +1,12 @@
+window.DEX = {
+ classic:{name:'Classic Dex',number:'01',tag:'A little wonder. In your pocket.',intro:'Your world, discovered.',label:'FIELD UNIT / SD–01',detail:'Tactile red casing, a luminous screen, and a satisfying discovery ritual. The closest to your Pokédex reference.',accent:'#b92e3d'},
+ journal:{name:'Field Journal',number:'02',tag:'Everyday things. New ways to see.',intro:'Notice something new.',label:'SPIRALDEX / FIELD NOTES',detail:'A warm field notebook. Your photographs become botanical-style specimens, with room for language and context.',accent:'#486749'},
+ holo:{name:'Holo Cards',number:'03',tag:'Turn the ordinary into a rare find.',intro:'A world worth collecting.',label:'SPIRALDEX / COLLECTION',detail:'The card is the hero. Foil, depth, and category-specific frames make an everyday chair feel like a discovery.',accent:'#a48cfa'},
+ pocket:{name:'Pocket Scanner',number:'04',tag:'See it. Say it. Keep it.',intro:'What’s that in Japanese?',label:'SPIRALDEX / SCAN',detail:'A camera-first companion built for one hand. The shortest path from an object to its Japanese word.',accent:'#dc503c'},
+ studio:{name:'Study Studio',number:'05',tag:'Small discoveries. Lasting memories.',intro:'Make your world familiar.',label:'SPIRALDEX / LEARN',detail:'A playful learning desk. Discoveries lead directly into sound, kana, and a gentle recall exercise.',accent:'#7052ab'}
+};
+window.SAMPLES = [
+{id:'chair',word:'椅子',reading:'いす',romaji:'isu',english:'chair',category:'Everyday',template:'everyday',description:'A seat for one person, usually with a back.',sentence:'これは椅子です。',sentence_reading:'これはいすです。',translation:'This is a chair.',fact:'椅子に座る means “to sit on a chair”.',asset:'assets/chair.png',number:'001',source:'Sample entry'},
+{id:'apple',word:'りんご',reading:'りんご',romaji:'ringo',english:'apple',category:'Nature',template:'nature',description:'A round fruit often eaten fresh.',sentence:'りんごを食べます。',sentence_reading:'りんごをたべます。',translation:'I eat an apple.',fact:'りんご is commonly written in hiragana.',asset:'assets/apple.png',number:'002',source:'Sample entry'},
+{id:'cup',word:'カップ',reading:'かっぷ',romaji:'kappu',english:'cup',category:'Everyday',template:'everyday',description:'A small container for drinking.',sentence:'これはカップです。',sentence_reading:'これはかっぷです。',translation:'This is a cup.',fact:'カップ is a loanword, written in katakana.',asset:'assets/cup.png',number:'003',source:'Sample entry'}
+];
